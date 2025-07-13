@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "vscode-agent": {
+      "command": "node",
+      "args": ["/Users/braincraft/Desktop/vscode-mcp-server/dist/src/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

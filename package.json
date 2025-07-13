@@ -1,0 +1,51 @@
+{
+  "name": "vscode-agent-mcp",
+  "version": "2.0.0",
+  "description": "Full-featured coding agent MCP server for VS Code with Python, JavaScript, and Git support",
+  "main": "dist/src/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "start": "npm run build && node dist/src/index.js",
+    "dev": "tsc --watch",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
+    "test:unit": "node --experimental-vm-modules node_modules/.bin/jest tests/services/",
+    "test:integration": "node --experimental-vm-modules node_modules/.bin/jest tests/integration.test.ts",
+    "test:e2e": "node --experimental-vm-modules node_modules/.bin/jest tests/e2e.test.ts",
+    "test:server": "node --experimental-vm-modules node_modules/.bin/jest tests/VSCodeAgentServer.test.ts",
+    "test:all": "node --experimental-vm-modules node_modules/.bin/jest --coverage --verbose",
+    "test:ci": "node --experimental-vm-modules node_modules/.bin/jest --ci --coverage --watchAll=false"
+  },
+  "keywords": [
+    "mcp",
+    "vscode",
+    "claude",
+    "agent",
+    "python",
+    "javascript",
+    "git"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1"
+  },
+  "bin": {
+    "vscode-agent-mcp": "./dist/src/index.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@jest/globals": "^30.0.4",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.10",
+    "babel-jest": "^30.0.4",
+    "jest": "^30.0.4",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
