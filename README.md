@@ -1,5 +1,7 @@
 # VS Code MCP Server
 
+# VS Code MCP Server
+
 A comprehensive Model Context Protocol (MCP) server that enables AI assistants like Claude to interact with VS Code workspaces. This server provides 30+ development tools for file operations, code execution, Git management, project scaffolding, and more.
 
 ## 🚀 Features
@@ -38,12 +40,15 @@ A comprehensive Model Context Protocol (MCP) server that enables AI assistants l
 ## 📋 Prerequisites
 
 - **Node.js** 18+ 
+- **pnpm** 8+ (recommended package manager)
 - **VS Code** (any recent version)
 - **Python** 3.8+ (for Python project support)
 - **Git** (for version control features)
 - **Claude AI** or other MCP-compatible AI assistant
 
 ## 🛠️ Installation
+
+### Local Development
 
 1. **Clone the repository:**
    ```bash
@@ -53,39 +58,71 @@ A comprehensive Model Context Protocol (MCP) server that enables AI assistants l
 
 2. **Install dependencies:**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Build the project:**
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 4. **Run tests to verify installation:**
    ```bash
-   npm test
+   pnpm test
+   ```
+
+### Docker Installation
+
+1. **Using Docker Compose (Recommended):**
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Using Docker directly:**
+   ```bash
+   docker build -t vscode-mcp-server .
+   docker run -d --name mcp-server vscode-mcp-server
    ```
 
 ## 🚀 Usage
 
 ### Starting the Server
 
+**Local:**
 ```bash
-npm start
+pnpm start
+```
+
+**Docker:**
+```bash
+docker-compose up
 ```
 
 The server runs on stdio and communicates using the MCP protocol.
 
-### Configuration with Claude
+### Configuration with Claude Desktop
 
-Add this configuration to your Claude MCP settings:
+Add this configuration to your Claude MCP settings (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "vscode-mcp-server": {
       "command": "node",
-      "args": ["/path/to/vscode-mcp-server/dist/index.js"],
+      "args": ["/path/to/vscode-mcp-server/dist/src/index.js"],
+      "env": {}
+    }
+  }
+}
+```
+
+For Docker deployment:
+```json
+{
+  "mcpServers": {
+    "vscode-mcp-server": {
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-server", "node", "/app/dist/src/index.js"],
       "env": {}
     }
   }
@@ -132,7 +169,7 @@ The server provides 30+ tools organized into categories:
 
 1. **Build the server:**
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 2. **Configure Claude Desktop:**
@@ -155,7 +192,15 @@ Once configured, you can use Claude Desktop to:
 - **Git Operations**: "Check git status and create a new branch"
 - **File Operations**: "Read the main config file and explain it"
 
-See `CLAUDE_TESTING_GUIDE.md` and `QUICK_REFERENCE.md` for detailed testing workflows.
+### Testing with Claude Desktop
+
+Once configured, you can use Claude Desktop to:
+
+- **Explore Projects**: "Show me the workspace structure"
+- **Code Analysis**: "Find all TODO comments in the codebase" 
+- **Run Tests**: "Execute the test suite and show results"
+- **Git Operations**: "Check git status and create a new branch"
+- **File Operations**: "Read the main config file and explain it"
 
 ## 🧪 Development
 
@@ -178,6 +223,7 @@ src/
     └── AnalysisService.ts   # Code analysis
 
 tests/
+├── integration.test.ts      # Integration tests
 ├── e2e.test.ts              # End-to-end tests
 ├── VSCodeAgentServer.test.ts # Server tests
 └── services/                # Service unit tests
@@ -187,23 +233,38 @@ tests/
 
 ```bash
 # Build the project
-npm run build
+pnpm run build
 
 # Start the server
-npm start
+pnpm start
 
 # Run all tests
-npm test
+pnpm test
 
-# Run specific test suites
-npm run test:unit      # Unit tests only
-npm run test:e2e       # E2E tests only
-
-# Development mode with auto-rebuild
-npm run dev
+# Run integration tests
+pnpm test tests/integration.test.ts
 
 # Generate test coverage
-npm run test:coverage
+pnpm run test:coverage
+
+# Development mode with auto-rebuild
+pnpm run dev
+```
+
+### Docker Development
+
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Run tests in Docker
+docker-compose run --rm app pnpm test
+
+# View logs
+docker-compose logs -f app
+
+# Stop services
+docker-compose down
 ```
 
 ### Running Tests
@@ -216,13 +277,13 @@ The project includes comprehensive test coverage:
 
 ```bash
 # Run all tests
-npm test
+pnpm test
 
 # Run with coverage
-npm run test:coverage
+pnpm run test:coverage
 
 # Run specific test files
-npm test -- --testPathPatterns="e2e"
+pnpm test -- --testPathPatterns="e2e"
 ```
 
 ## 🔧 Configuration
@@ -247,7 +308,7 @@ The project uses modern TypeScript with ES modules:
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes and add tests
-4. Run tests: `npm test`
+4. Run tests: `pnpm test`
 5. Commit your changes: `git commit -am 'Add feature'`
 6. Push to the branch: `git push origin feature-name`
 7. Submit a pull request
@@ -268,7 +329,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **Issues**: Create an issue on GitHub
 - **Documentation**: Check the inline code documentation
-- **Testing**: Run `npm test` to verify functionality
+- **Testing**: Run `pnpm test` to verify functionality
 
 ## 🔄 Version History
 

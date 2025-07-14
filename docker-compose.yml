@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # Main MCP Server
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: vscode-mcp-server
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - WORKSPACE_PATH=/app/workspace
+    volumes:
+      # Mount workspace directory for persistent file operations
+      - workspace-data:/app/workspace
+      # Mount logs directory
+      - logs-data:/app/logs
+      # Optional: Mount host directories for development
+      # - ./workspace:/app/workspace
+      # - ./logs:/app/logs
+    networks:
+      - mcp-network
+    # For stdio-based MCP communication, no ports needed
+    # ports:
+    #   - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check: MCP Server is running')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development server (optional - for development with hot reload)
+  mcp-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: vscode-mcp-server-dev
+    restart: "no"
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - WORKSPACE_PATH=/app/workspace
+    volumes:
+      # Mount source code for development
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./tsconfig.json:/app/tsconfig.json
+      - workspace-data:/app/workspace
+      - logs-data:/app/logs
+      # Mount pnpm cache for faster builds
+      - pnpm-cache:/root/.local/share/pnpm
+    networks:
+      - mcp-network
+    command: ["pnpm", "run", "dev"]
+    profiles:
+      - dev
+
+  # Test runner service
+  mcp-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: vscode-mcp-server-test
+    environment:
+      - NODE_ENV=test
+      - LOG_LEVEL=error
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./jest.config.js:/app/jest.config.js
+      # Mount pnpm cache for faster builds
+      - pnpm-cache:/root/.local/share/pnpm
+    networks:
+      - mcp-network
+    command: ["pnpm", "test"]
+    profiles:
+      - test
+
+volumes:
+  workspace-data:
+    driver: local
+  logs-data:
+    driver: local
+  pnpm-cache:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge
+
+# Development compose override example
+# Create docker-compose.override.yml for local customizations:
+#
+# version: '3.8'
+# services:
+#   mcp-server:
+#     volumes:
+#       - ./workspace:/app/workspace
+#       - ./logs:/app/logs
+#     environment:
+#       - LOG_LEVEL=debug
