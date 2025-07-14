@@ -6,6 +6,11 @@ export default {
   preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
   testEnvironment: 'node',
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
+  },
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       useESM: true,
