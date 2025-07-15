@@ -7,10 +7,22 @@
 import { describe, test, expect, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
 import { join, resolve } from 'path';
 import fs from 'fs/promises';
+import os from 'os';
 
 import { WorkspaceService } from '../../src/services/WorkspaceService.js';
 import { TestUtils } from '../utils.js';
 import { ToolResult } from '../../src/types.js';
+
+// Helper function to validate MCP responses
+function expectValidMcpResponse(result: ToolResult): void {
+  expect(result).toBeDefined();
+  expect(result.content).toBeDefined();
+  expect(Array.isArray(result.content)).toBe(true);
+  expect(result.content.length).toBeGreaterThan(0);
+  expect(result.content[0]).toBeDefined();
+  expect(result.content[0].type).toBe('text');
+  expect(typeof result.content[0].text).toBe('string');
+}
 
 describe('WorkspaceService', () => {
   let workspaceService: WorkspaceService;
@@ -527,6 +539,49 @@ describe('WorkspaceService', () => {
       
       expect(result).toBeTruthy();
       expect(result).toContain('file.txt');
+    });
+  });
+
+  describe('smartInitializeWorkspace', () => {
+    test('should offer to keep current workspace when already set to valid path', async () => {
+      workspaceService.setWorkspace(tempWorkspace);
+      
+      const result = await workspaceService.smartInitializeWorkspace();
+      
+      expectValidMcpResponse(result);
+      expect(result.content[0].text).toContain('Current workspace:');
+      expect(result.content[0].text).toContain('Would you like me to:');
+      expect(result.content[0].text).toContain('Keep using this workspace');
+      expect(result.content[0].text).toContain('Detect and switch to a VS Code workspace');
+    });
+
+    test('should offer VS Code detection when no good workspace is set', async () => {
+      // Set workspace to home directory (not ideal)
+      workspaceService.setWorkspace(os.homedir());
+      
+      const result = await workspaceService.smartInitializeWorkspace();
+      
+      expectValidMcpResponse(result);
+      expect(result.content[0].text).toContain('Welcome!');
+      expect(result.content[0].text).toContain('Auto-detect');
+      expect(result.content[0].text).toContain('Manual setup');
+      expect(result.content[0].text).toContain('Create new');
+    });
+
+    test('should handle initialization errors gracefully', async () => {
+      // Mock getCurrentWorkspace to throw an error
+      const originalGetCurrentWorkspace = workspaceService.getCurrentWorkspace;
+      workspaceService.getCurrentWorkspace = jest.fn().mockImplementation(() => {
+        throw new Error('Test error');
+      });
+      
+      const result = await workspaceService.smartInitializeWorkspace();
+      
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Failed to initialize workspace');
+      
+      // Restore original method
+      workspaceService.getCurrentWorkspace = originalGetCurrentWorkspace;
     });
   });
 

@@ -51,6 +51,20 @@ export const FILE_EXTENSIONS = {
   JAVASCRIPT: '.js',
 } as const;
 
+export const VSCODE_DETECTION = {
+  PROCESS_NAMES: ['code', 'code-insiders', 'codium', 'cursor'],
+  CONFIG_PATHS: {
+    MACOS: '~/Library/Application Support/Code/User/workspaceStorage',
+    LINUX: '~/.config/Code/User/workspaceStorage', 
+    WINDOWS: '%APPDATA%/Code/User/workspaceStorage'
+  },
+  RECENT_WORKSPACES_PATH: {
+    MACOS: '~/Library/Application Support/Code/User/globalStorage/storage.json',
+    LINUX: '~/.config/Code/User/globalStorage/storage.json',
+    WINDOWS: '%APPDATA%/Code/User/globalStorage/storage.json'
+  }
+} as const;
+
 // Type exports for compile-time type safety
 export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[keyof typeof SUPPORTED_LANGUAGES];
 export type ProjectType = typeof PROJECT_TYPES[keyof typeof PROJECT_TYPES];

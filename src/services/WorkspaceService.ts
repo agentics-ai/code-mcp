@@ -794,4 +794,124 @@ export class WorkspaceService {
     
     return languageMap[ext] || null;
   }
+
+  /**
+   * Smart workspace initialization - detect VS Code workspaces and offer choice
+   */
+  async smartInitializeWorkspace(): Promise<ToolResult> {
+    try {
+      // Check if we already have a reasonable workspace set
+      const currentPath = this.getCurrentWorkspace();
+      if (currentPath && currentPath !== os.homedir() && this.validateWorkspace(currentPath)) {
+        // Already have a good workspace, offer to change it
+        return {
+          content: [{
+            type: 'text',
+            text: `📁 **Current workspace:** ${currentPath}\n\n🔄 Would you like me to:\n1. Keep using this workspace\n2. Detect and switch to a VS Code workspace\n3. Manually set a different workspace\n\nJust let me know your preference!`,
+          }],
+        };
+      }
+
+      // No good workspace set, try to auto-detect VS Code workspaces
+      return {
+        content: [{
+          type: 'text',
+          text: `🚀 **Welcome!** Let me help you get started.\n\n🔍 I can automatically detect your VS Code workspaces and help you choose which one to use for our session.\n\n**Options:**\n1. 🎯 **Auto-detect** - I'll find your VS Code workspaces\n2. 📁 **Manual setup** - You specify a workspace path\n3. 🏗️ **Create new** - Start a new project\n\nShould I detect your VS Code workspaces?`,
+        }],
+      };
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Failed to initialize workspace: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        }],
+      };
+    }
+  }
+
+  /**
+   * Detect programming language from file extension
+   */
+  private detectLanguage(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    const languageMap: Record<string, string> = {
+      '.js': 'javascript',
+      '.jsx': 'javascript',
+      '.ts': 'typescript',
+      '.tsx': 'typescript',
+      '.py': 'python',
+      '.java': 'java',
+      '.cpp': 'cpp',
+      '.c': 'c',
+      '.cs': 'csharp',
+      '.php': 'php',
+      '.rb': 'ruby',
+      '.go': 'go',
+      '.rs': 'rust',
+      '.swift': 'swift',
+      '.kt': 'kotlin',
+      '.scala': 'scala',
+      '.r': 'r',
+      '.m': 'matlab',
+      '.sh': 'bash',
+      '.ps1': 'powershell',
+      '.html': 'html',
+      '.css': 'css',
+      '.scss': 'scss',
+      '.less': 'less',
+      '.json': 'json',
+      '.xml': 'xml',
+      '.yaml': 'yaml',
+      '.yml': 'yaml',
+      '.toml': 'toml',
+      '.ini': 'ini',
+      '.cfg': 'ini',
+      '.conf': 'ini',
+      '.md': 'markdown',
+      '.tex': 'latex',
+      '.sql': 'sql',
+      '.vue': 'vue',
+      '.svelte': 'svelte',
+      '.dart': 'dart',
+      '.lua': 'lua',
+      '.perl': 'perl',
+      '.pl': 'perl',
+      '.clj': 'clojure',
+      '.elm': 'elm',
+      '.ex': 'elixir',
+      '.exs': 'elixir',
+      '.erl': 'erlang',
+      '.hrl': 'erlang',
+      '.fs': 'fsharp',
+      '.fsx': 'fsharp',
+      '.hs': 'haskell',
+      '.jl': 'julia',
+      '.nim': 'nim',
+      '.ml': 'ocaml',
+      '.mli': 'ocaml',
+      '.pas': 'pascal',
+      '.pp': 'pascal',
+      '.rkt': 'racket',
+      '.scm': 'scheme',
+      '.ss': 'scheme',
+      '.vb': 'vbnet',
+      '.vbs': 'vbscript',
+      '.ahk': 'autohotkey',
+      '.au3': 'autoit',
+      '.bat': 'batch',
+      '.cmd': 'batch',
+      '.dockerfile': 'dockerfile',
+      '.makefile': 'makefile',
+      '.mk': 'makefile',
+      '.cmake': 'cmake',
+      '.gradle': 'gradle',
+      '.groovy': 'groovy',
+      '.gvy': 'groovy',
+      '.gy': 'groovy',
+      '.gsh': 'groovy'
+    };
+    
+    return languageMap[ext] || 'text';
+  }
 }

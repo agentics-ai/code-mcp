@@ -39,6 +39,7 @@ import {
   SearchCodeArgs 
 } from './services/AnalysisService.js';
 import { ProjectService, CreateProjectArgs } from './services/ProjectService.js';
+import { VSCodeDetectionService, DetectWorkspacesArgs } from './services/VSCodeDetectionService.js';
 
 class VSCodeAgentServer {
   private server: Server;
@@ -49,6 +50,7 @@ class VSCodeAgentServer {
   private processService: ProcessService;
   private analysisService: AnalysisService;
   private projectService: ProjectService;
+  private vsCodeDetectionService: VSCodeDetectionService;
 
   constructor() {
     this.server = new Server(
@@ -71,6 +73,7 @@ class VSCodeAgentServer {
     this.processService = new ProcessService(this.workspaceService);
     this.analysisService = new AnalysisService(this.workspaceService, this.fileService);
     this.projectService = new ProjectService(this.workspaceService);
+    this.vsCodeDetectionService = new VSCodeDetectionService();
 
     this.setupToolHandlers();
     this.setupErrorHandling();
@@ -111,6 +114,16 @@ class VSCodeAgentServer {
         };
       case 'list_workspaces':
         return await this.workspaceService.listWorkspaces();
+      case 'detect_vscode_workspaces':
+        return await this.vsCodeDetectionService.detectWorkspaces(args as DetectWorkspacesArgs);
+      case 'present_workspace_choice':
+        // For now, just call the method without args since it doesn't need them
+        const detectionResult = await this.vsCodeDetectionService.detectWorkspaces();
+        return await this.vsCodeDetectionService.presentWorkspaceChoice({ instances: [], recentWorkspaces: [], totalWorkspaces: 0 });
+      case 'auto_select_workspace':
+        return await this.vsCodeDetectionService.autoSelectWorkspace();
+      case 'smart_workspace_init':
+        return await this.workspaceService.smartInitializeWorkspace();
         
       // File Operations
       case 'read_file':

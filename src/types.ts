@@ -5,6 +5,27 @@ export interface MCPRequest {
   params?: any;
 }
 
+// VS Code workspace detection types
+export interface VSCodeWorkspace {
+  path: string;
+  name: string;
+  isOpen: boolean;
+  lastAccessed?: Date;
+  type: 'folder' | 'workspace' | 'file';
+}
+
+export interface VSCodeInstance {
+  pid: number;
+  executable: string;
+  workspaces: VSCodeWorkspace[];
+}
+
+export interface VSCodeDetectionResult {
+  instances: VSCodeInstance[];
+  recentWorkspaces: VSCodeWorkspace[];
+  totalWorkspaces: number;
+}
+
 export interface MCPResponse {
   id: number | string;
   result?: any;

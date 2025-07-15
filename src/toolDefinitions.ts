@@ -32,6 +32,42 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {},
     },
   },
+  {
+    name: 'detect_vscode_workspaces',
+    description: 'Automatically detect open VS Code instances and their workspaces',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        includeRecent: { type: 'boolean', description: 'Include recent workspaces from VS Code history' },
+        includeRunning: { type: 'boolean', description: 'Include currently running VS Code instances' },
+        maxResults: { type: 'number', description: 'Maximum number of workspaces to return' },
+      },
+    },
+  },
+  {
+    name: 'present_workspace_choice',
+    description: 'Present detected workspaces to user for selection',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'auto_select_workspace',
+    description: 'Automatically select the most appropriate VS Code workspace',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'smart_workspace_init',
+    description: 'Intelligently initialize workspace with VS Code detection and user choice',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 
   // File Operations
   {
