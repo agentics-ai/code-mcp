@@ -327,9 +327,9 @@ describe('VSCodeDetectionService', () => {
         { commandLine: '/usr/local/bin/code', expected: 'code' },
         { commandLine: '/usr/local/bin/code-insiders', expected: 'code-insiders' },
         { commandLine: '/usr/local/bin/codium', expected: 'codium' },
-        { commandLine: '/usr/local/bin/cursor', expected: 'cursor' }
+        { commandLine: '/usr/local/bin/cursor', expected: 'cursor' },
+        { commandLine: '/usr/local/bin/deepseek', expected: 'code' } // fallback for unknown executable
       ];
-      
       for (const { commandLine, expected } of testCases) {
         const result = vsCodeDetectionService['_extractExecutableName'](commandLine);
         expect(result).toBe(expected);
