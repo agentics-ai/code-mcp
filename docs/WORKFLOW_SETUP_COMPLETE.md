@@ -8,7 +8,9 @@
 
 ## 🔧 Manual Configuration Required
 
-### 1. Branch Protection Rules
+### 1. Branch Protection Rules (Optional for Maintainers)
+**Note**: This is for repository maintainers only. Contributors don't need to set this up.
+
 **Go to**: Repository → Settings → Branches → Add rule
 
 #### For `main` branch:

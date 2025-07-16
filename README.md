@@ -92,19 +92,44 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
    ```
 
 4. **Configure Claude Desktop:**
-   ```bash
-   # Copy the included configuration
-   cp temp/claude_desktop_config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
    
-   # Or manually add to your Claude config:
+   **Option A: Automatic Setup (Recommended)**
+   ```bash
+   # Run the configuration generator script
+   ./scripts/generate-claude-config.sh
    ```
    
+   **Option B: Manual Setup**
+   ```bash
+   # Create the config directory if it doesn't exist
+   mkdir -p ~/Library/Application\ Support/Claude
+   
+   # Edit the configuration file
+   nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   ```
+   
+   Add the following configuration (replace `/path/to/vscode-mcp` with your actual path):
    ```json
    {
      "mcpServers": {
        "vscode-agent": {
          "command": "node",
          "args": ["/path/to/vscode-mcp/dist/src/index.js"],
+         "env": {
+           "NODE_ENV": "production"
+         }
+       }
+     }
+   }
+   ```
+   
+   **Example with absolute path:**
+   ```json
+   {
+     "mcpServers": {
+       "vscode-agent": {
+         "command": "node",
+         "args": ["/Users/yourusername/Desktop/vscode-mcp/dist/src/index.js"],
          "env": {
            "NODE_ENV": "production"
          }
@@ -152,6 +177,38 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
    # Run tests in container
    docker-compose run --rm app pnpm test
    ```
+
+## 🛡️ Repository Setup & Security
+
+### Branch Protection Setup
+
+⚠️ **IMPORTANT**: For production use, enable branch protection to prevent unauthorized changes to the main branch.
+
+**Quick Setup:**
+```bash
+# Automatic setup (requires GitHub CLI)
+./scripts/setup-branch-protection.sh
+```
+
+**Manual Setup:**
+1. Go to your repository settings: `Settings → Branches → Add rule`
+2. Set branch name pattern: `main`
+3. Enable the following protections:
+   - ✅ Require pull request reviews (1 approval)
+   - ✅ Require status checks to pass
+   - ✅ Require conversation resolution
+   - ✅ Require linear history
+   - ✅ Include administrators
+
+📖 **Detailed Guide**: [scripts/setup-branch-protection.md](scripts/setup-branch-protection.md)
+
+### Security Features
+
+- 🔒 **Automated dependency scanning** via Dependabot
+- 🛡️ **Security vulnerability alerts** for dependencies
+- 👥 **Code owner reviews** required for sensitive files
+- 🔍 **Automated security checks** in CI/CD pipeline
+- 📝 **Security issue reporting** via GitHub Security Advisories
 
 ## 🛠️ Complete Tool Reference
 
@@ -385,6 +442,26 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Issues**: Create an issue on GitHub
 - **Documentation**: Check the inline code documentation
 - **Testing**: Run `pnpm test` to verify functionality
+
+## 📝 Helper Scripts
+
+The `scripts/` directory contains useful automation tools:
+
+### Configuration Scripts
+- **`generate-claude-config.sh`** - Automatically generates Claude Desktop configuration
+  ```bash
+  ./scripts/generate-claude-config.sh
+  ```
+
+### Repository Setup Scripts  
+- **`setup-branch-protection.sh`** - Configures GitHub branch protection rules
+  ```bash
+  ./scripts/setup-branch-protection.sh
+  ```
+- **`setup-branch-protection.md`** - Manual setup guide for branch protection
+
+### Usage
+All scripts are executable and include built-in help. Run any script without arguments to see usage information.
 
 ## 🔄 Version History
 
