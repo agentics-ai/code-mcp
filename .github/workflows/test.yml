@@ -20,7 +20,7 @@ jobs:
         fetch-depth: 0
 
     - name: List files in repo root (diagnostic)
-      run: ls -lah
+      run: Get-ChildItem | Format-List
 
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -111,7 +111,7 @@ jobs:
         fetch-depth: 0
 
     - name: List files in repo root (diagnostic)
-      run: ls -lah
+      run: Get-ChildItem | Format-List
 
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -144,7 +144,7 @@ jobs:
         fetch-depth: 0
 
     - name: List files in repo root (diagnostic)
-      run: ls -lah
+      run: Get-ChildItem | Format-List
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
