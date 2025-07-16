@@ -37,7 +37,7 @@ jobs:
       run: pnpm install --frozen-lockfile
 
     - name: Setup Python for tests
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -83,7 +83,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         file: ./coverage/lcov.info
         flags: unittests
@@ -173,7 +173,7 @@ jobs:
         grep "Maximum resident set size" performance.log || echo "Memory info not available"
 
     - name: Archive performance logs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: performance-logs
         path: performance.log
