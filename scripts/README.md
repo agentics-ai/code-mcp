@@ -32,23 +32,10 @@ chmod +x scripts/*.sh
 
 ## 🆘 Troubleshooting
 
-### GitHub CLI Issues
-```bash
-# Install GitHub CLI
-brew install gh
-
-# Authenticate
-gh auth login
-
-# Check status
-gh auth status
-```
-
 ### Permission Issues
 ```bash
 # Make scripts executable
 chmod +x scripts/generate-claude-config.sh
-chmod +x scripts/setup-branch-protection.sh
 ```
 
 ### Path Issues
