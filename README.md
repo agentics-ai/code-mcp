@@ -94,7 +94,7 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 4. **Configure Claude Desktop:**
    ```bash
    # Copy the included configuration
-   cp claude_desktop_config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   cp temp/claude_desktop_config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
    
    # Or manually add to your Claude config:
    ```

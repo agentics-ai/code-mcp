@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-issue-config.json
+# GitHub Issue Template Configuration
+# This file configures the issue template chooser
+# See: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#configuring-the-template-chooser
+#
+# NOTE: VS Code may show schema validation errors for this file because it incorrectly applies
+# the GitHub Issue Forms schema instead of the Issue Template Config schema. This file is 
+# correct according to GitHub's official documentation and the errors can be safely ignored.
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/braincraft/vscode-mcp/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: Documentation
+    url: https://github.com/braincraft/vscode-mcp/blob/main/README.md
+    about: Check our comprehensive documentation
+  - name: Security Issues
+    url: https://github.com/braincraft/vscode-mcp/security/advisories/new
+    about: Report security vulnerabilities privately

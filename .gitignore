@@ -102,6 +102,7 @@ Thumbs.db
 # Temporary folders
 tmp/
 temp/
+analysis/
 
 # Legacy lock files to ignore (we use pnpm now)
 package-lock.json
