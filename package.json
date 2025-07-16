@@ -13,7 +13,7 @@
     "test:watch": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --coverage",
     "test:unit": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/services/",
-    "test:integration": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/integration.test.ts",
+    "test:integration": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/integration.test.ts --detectOpenHandles",
     "test:e2e": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/e2e.test.ts",
     "test:server": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/VSCodeAgentServer.test.ts",
     "test:all": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --coverage --verbose",
