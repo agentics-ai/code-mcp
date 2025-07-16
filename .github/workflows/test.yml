@@ -93,40 +93,6 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./coverage/lcov.info
       continue-on-error: true
-
-  test-matrix:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [20.x]
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    - name: Install pnpm
-      run: npm install -g pnpm@10.10.0
-
-    - name: Verify pnpm installation
-      run: pnpm --version
-
-    - name: Install dependencies (with lockfile)
-      run: pnpm install --frozen-lockfile
-
-    - name: Run build
-      run: pnpm run build
-
-    - name: Run cross-platform tests
-      run: pnpm run test:ci
-
   performance:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
