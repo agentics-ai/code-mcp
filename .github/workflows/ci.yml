@@ -21,16 +21,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: ${{ env.PNPM_VERSION }}
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
+
+    - name: Install pnpm
+      run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+    - name: Verify pnpm installation
+      run: pnpm --version
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
@@ -70,16 +70,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: ${{ env.PNPM_VERSION }}
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
+
+    - name: Install pnpm
+      run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+    - name: Verify pnpm installation
+      run: pnpm --version
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
@@ -125,16 +125,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: ${{ env.PNPM_VERSION }}
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
+
+    - name: Install pnpm
+      run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+    - name: Verify pnpm installation
+      run: pnpm --version
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
@@ -189,16 +189,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: ${{ env.PNPM_VERSION }}
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
+
+    - name: Install pnpm
+      run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+    - name: Verify pnpm installation
+      run: pnpm --version
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
