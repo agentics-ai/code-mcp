@@ -111,7 +111,7 @@ jobs:
       run: pnpm run test:ci
 
     - name: Upload coverage to CodeCov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         file: ./coverage/lcov.info
         flags: unittests
@@ -119,14 +119,14 @@ jobs:
       continue-on-error: true
 
     - name: Archive build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: dist/
         retention-days: 30
 
     - name: Archive test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results
@@ -179,7 +179,7 @@ jobs:
         pnpm outdated || echo "Some dependencies are outdated"
 
     - name: Dependency vulnerability scan
-      uses: actions/dependency-review-action@v3
+      uses: actions/dependency-review-action@v4
       if: github.event_name == 'pull_request'
 
   docker:
@@ -199,7 +199,7 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Build Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         push: false
@@ -247,7 +247,7 @@ jobs:
       run: pnpm install --frozen-lockfile
 
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: build-artifacts
         path: dist/
@@ -257,7 +257,7 @@ jobs:
       continue-on-error: true
 
     - name: Archive demo results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: demo-results
@@ -297,7 +297,7 @@ jobs:
         echo "✅ All required checks passed!"
 
     - name: Comment PR status
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       if: always()
       with:
         script: |
