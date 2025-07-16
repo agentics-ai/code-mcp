@@ -19,7 +19,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v4
       with:
         version: 8
 
@@ -55,7 +55,7 @@ jobs:
       run: pnpm run test:ci
 
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         file: ./coverage/lcov.info
         flags: unittests
@@ -82,7 +82,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v4
       with:
         version: 8
 
@@ -110,7 +110,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v4
       with:
         version: 8
 
@@ -137,7 +137,7 @@ jobs:
         grep "Maximum resident set size" performance.log || echo "Memory info not available"
 
     - name: Archive performance logs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: performance-logs
         path: performance.log
