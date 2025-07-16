@@ -36,6 +36,16 @@ jobs:
     - name: Install dependencies (with lockfile)
       run: pnpm install --frozen-lockfile
 
+    - name: Setup Python for tests
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install pytest and Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+
     - name: Run TypeScript build
       run: pnpm run build
 
@@ -57,6 +67,20 @@ jobs:
 
     - name: Run full test suite with coverage
       run: pnpm run test:ci
+
+    - name: Run Python tests (if any)
+      run: |
+        if [ -f "demo/python_execution_test.py" ]; then
+          echo "Running Python execution test..."
+          python demo/python_execution_test.py
+        fi
+        if [ -d "tests" ] && find tests -name "*.py" -type f | grep -q .; then
+          echo "Running pytest..."
+          pytest tests/ -v
+        else
+          echo "No Python test files found"
+        fi
+      continue-on-error: true
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
