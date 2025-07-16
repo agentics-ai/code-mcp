@@ -1,0 +1,30 @@
+# Global code owners
+* @braincraft @Asif1405
+
+# Workflow and CI/CD
+/.github/ @braincraft @Asif1405
+
+# Core source code
+/src/ @braincraft @Asif1405
+
+# Tests
+/tests/ @braincraft @Asif1405
+
+# Documentation
+*.md @braincraft @Asif1405
+/docs/ @braincraft @Asif1405
+
+# Configuration files
+package.json @braincraft @Asif1405
+tsconfig.json @braincraft @Asif1405
+jest.config.js @braincraft @Asif1405
+docker-compose.yml @braincraft @Asif1405
+Dockerfile @braincraft @Asif1405
+
+# Demo and examples
+/demo/ @braincraft @Asif1405
+
+# Security-sensitive files
+.env* @braincraft
+*.key @braincraft
+*.pem @braincraft

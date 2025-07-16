@@ -1,0 +1,289 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  pr-validation:
+    name: Validate Pull Request
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate PR title and description
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { title, body, user } = context.payload.pull_request;
+          
+          // Check PR title format
+          const titlePattern = /^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+/;
+          if (!titlePattern.test(title)) {
+            core.setFailed(
+              `PR title should follow conventional commits format: 
+              "type(scope): description"
+              
+              Examples:
+              - feat: add new workspace detection
+              - fix(tests): resolve flaky test issue
+              - docs: update README with new features
+              
+              Current title: "${title}"`
+            );
+            return;
+          }
+          
+          // Check PR description
+          if (!body || body.trim().length < 20) {
+            core.setFailed(
+              `PR description is too short. Please provide:
+              - What changes are being made
+              - Why these changes are needed
+              - How to test the changes
+              
+              Minimum 20 characters required.`
+            );
+            return;
+          }
+          
+          // Check for breaking changes
+          if (title.includes('!') || body.toLowerCase().includes('breaking change')) {
+            console.log('⚠️ Breaking change detected - additional review required');
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚨 **Breaking Change Detected**
+              
+              This PR contains breaking changes. Please ensure:
+              - [ ] Version is bumped appropriately (major version)
+              - [ ] Migration guide is provided
+              - [ ] All affected areas are documented
+              - [ ] Extensive testing is performed`
+            });
+          }
+          
+          console.log('✅ PR validation passed');
+
+    - name: Check for required files
+      run: |
+        echo "Checking for required files..."
+        
+        required_files=(
+          "package.json"
+          "tsconfig.json"
+          "README.md"
+          "src/index.ts"
+        )
+        
+        missing_files=()
+        for file in "${required_files[@]}"; do
+          if [[ ! -f "$file" ]]; then
+            missing_files+=("$file")
+          fi
+        done
+        
+        if [[ ${#missing_files[@]} -gt 0 ]]; then
+          echo "❌ Missing required files:"
+          printf '%s\n' "${missing_files[@]}"
+          exit 1
+        fi
+        
+        echo "✅ All required files present"
+
+    - name: Check diff size
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          
+          const additions = pr.additions;
+          const deletions = pr.deletions;
+          const changedFiles = pr.changed_files;
+          
+          console.log(`PR Stats: +${additions} -${deletions} files: ${changedFiles}`);
+          
+          // Warn about large PRs
+          if (additions + deletions > 1000) {
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📏 **Large PR Detected**
+              
+              This PR has ${additions + deletions} line changes across ${changedFiles} files.
+              
+              Consider:
+              - [ ] Breaking this into smaller PRs
+              - [ ] Adding more detailed description
+              - [ ] Including comprehensive tests
+              - [ ] Extra review time may be needed`
+            });
+          }
+          
+          if (changedFiles > 50) {
+            core.setFailed(`Too many files changed (${changedFiles}). Please split into smaller PRs.`);
+          }
+
+  # Check for sensitive changes
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for sensitive file changes
+      run: |
+        echo "Checking for sensitive file changes..."
+        
+        # Get list of changed files
+        changed_files=$(git diff --name-only origin/main...HEAD)
+        
+        sensitive_patterns=(
+          "*.key"
+          "*.pem"
+          "*.p12"
+          "*.env"
+          "docker-compose.yml"
+          ".github/workflows/"
+          "package.json"
+        )
+        
+        sensitive_changes=()
+        for pattern in "${sensitive_patterns[@]}"; do
+          if echo "$changed_files" | grep -q "$pattern"; then
+            sensitive_changes+=("$pattern")
+          fi
+        done
+        
+        if [[ ${#sensitive_changes[@]} -gt 0 ]]; then
+          echo "⚠️ Sensitive files changed:"
+          printf '%s\n' "${sensitive_changes[@]}"
+          echo "Additional security review required"
+        else
+          echo "✅ No sensitive files changed"
+        fi
+
+  # Auto-assign reviewers based on changed files
+  assign-reviewers:
+    name: Auto-assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Assign reviewers based on changes
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const changedFiles = await github.rest.pulls.listFiles({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          
+          const files = changedFiles.data.map(f => f.filename);
+          let reviewers = [];
+          
+          // Logic for reviewer assignment based on file patterns
+          const hasDocChanges = files.some(f => f.includes('README') || f.includes('.md'));
+          const hasWorkflowChanges = files.some(f => f.includes('.github/'));
+          const hasTestChanges = files.some(f => f.includes('test') || f.includes('spec'));
+          const hasCoreChanges = files.some(f => f.includes('src/'));
+          
+          // Add repo owner as reviewer for all PRs
+          reviewers.push('braincraft', 'Asif1405');  // Add your GitHub usernames
+          
+          if (reviewers.length > 0) {
+            try {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                reviewers: reviewers.slice(0, 2) // Max 2 reviewers
+              });
+              console.log(`✅ Assigned reviewers: ${reviewers.join(', ')}`);
+            } catch (error) {
+              console.log(`Failed to assign reviewers: ${error.message}`);
+            }
+          }
+
+  # Status summary
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [pr-validation, security-check]
+    if: always()
+    
+    steps:
+    - name: Create PR summary comment
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const validation = '${{ needs.pr-validation.result }}';
+          const security = '${{ needs.security-check.result }}';
+          
+          const status = validation === 'success' && security === 'success' ? 
+            '✅ **PR validation passed**' : 
+            '❌ **PR validation failed**';
+          
+          const body = `## Pull Request Validation Summary
+          
+          ${status}
+          
+          ### Check Results
+          - **PR Validation**: ${validation === 'success' ? '✅' : '❌'} ${validation}
+          - **Security Check**: ${security === 'success' ? '✅' : '❌'} ${security}
+          
+          ### Next Steps
+          ${validation === 'success' && security === 'success' ? 
+            '- Wait for CI/CD pipeline to complete\n- Request review when ready\n- Address any feedback' :
+            '- Fix validation issues above\n- Push new commits to update PR\n- Re-run validation checks'
+          }
+          
+          ---
+          *This comment will be updated as validation status changes*`;
+          
+          // Try to update existing comment or create new one
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+          
+          const botComment = comments.data.find(c => 
+            c.user.type === 'Bot' && c.body.includes('Pull Request Validation Summary')
+          );
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: body
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+          }
