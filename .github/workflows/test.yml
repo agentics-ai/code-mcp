@@ -28,7 +28,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: Install pnpm
-      run: npm install -g pnpm@8
+      run: npm install -g pnpm@10.10.0
 
     - name: Verify pnpm installation
       run: pnpm --version
@@ -153,4 +153,3 @@ jobs:
       with:
         name: performance-logs
         path: performance.log
-        
