@@ -18,6 +18,7 @@
     "test:server": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/VSCodeAgentServer.test.ts",
     "test:all": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --coverage --verbose",
     "test:ci": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --ci --coverage --watchAll=false",
+    "demo": "pnpm run build && node dist/demo/mcp-server-demonstration.js",
     "docker:build": "docker build -t vscode-mcp-server .",
     "docker:run": "docker run --rm -it vscode-mcp-server",
     "docker:up": "docker-compose up -d",

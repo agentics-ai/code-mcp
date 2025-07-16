@@ -1,6 +1,6 @@
 /**
  * VS Code workspace detection service
- * Automatically detects open VS Code instances and their workspaces
+ * FIXED VERSION: Better detection of running VS Code instances
  */
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -27,6 +27,85 @@ export interface SelectWorkspaceArgs {
 export class VSCodeDetectionService {
   
   constructor() {}
+
+  /**
+   * Smart workspace initialization - automatically detect and prompt user
+   */
+  async smartWorkspaceInit(): Promise<ToolResult> {
+    try {
+      // First, try to detect workspaces
+      const detection = await this._performDetection();
+      
+      if (detection.totalWorkspaces === 0) {
+        return {
+          content: [{
+            type: 'text',
+            text: `🔍 **No VS Code workspaces detected**
+
+I couldn't find any open VS Code windows or recent workspaces. Here are your options:
+
+1. Open VS Code with a project folder, then ask me to detect workspaces again
+2. **Tell me the path** to your project (e.g., "/Users/yourname/projects/myproject")
+3. **Create a new project** - just tell me what type of project you want to create
+
+What would you like to do?`,
+          }],
+        };
+      }
+
+      // Format workspaces for user selection
+      let response = `🎯 **VS Code Workspace Detection**\n\nI found the following workspaces:\n\n`;
+      
+      // Show currently open workspaces first
+      if (detection.instances.length > 0) {
+        response += `**🟢 Currently Open in VS Code:**\n`;
+        let index = 1;
+        for (const instance of detection.instances) {
+          for (const workspace of instance.workspaces) {
+            response += `${index}. ${workspace.name}\n   📁 ${workspace.path}\n`;
+            index++;
+          }
+        }
+        response += '\n';
+      }
+
+      // Show recent workspaces
+      if (detection.recentWorkspaces.length > 0) {
+        response += `**📂 Recent Workspaces:**\n`;
+        let index = detection.instances.flatMap(i => i.workspaces).length + 1;
+        const recentToShow = detection.recentWorkspaces.slice(0, 5);
+        for (const workspace of recentToShow) {
+          response += `${index}. ${workspace.name}\n   📁 ${workspace.path}\n`;
+          if (workspace.lastAccessed) {
+            response += `   🕒 Last used: ${this._formatDate(workspace.lastAccessed)}\n`;
+          }
+          index++;
+        }
+      }
+
+      response += `\n**To select a workspace:**
+• Tell me the number (e.g., "use workspace 1")
+• Or tell me to use the first/most recent one
+• Or provide a different path
+
+Which workspace would you like to use?`;
+
+      return {
+        content: [{
+          type: 'text',
+          text: response,
+        }],
+      };
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Failed to detect workspaces: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        }],
+      };
+    }
+  }
 
   /**
    * Detect all available VS Code workspaces
@@ -82,55 +161,8 @@ export class VSCodeDetectionService {
   /**
    * Present workspace selection to user and handle choice
    */
-  async presentWorkspaceChoice(detectedWorkspaces: VSCodeDetectionResult): Promise<ToolResult> {
-    const allWorkspaces = [
-      ...detectedWorkspaces.instances.flatMap(instance => instance.workspaces),
-      ...detectedWorkspaces.recentWorkspaces
-    ];
-
-    if (allWorkspaces.length === 0) {
-      return {
-        content: [{
-          type: 'text',
-          text: 'No VS Code workspaces detected. You can:\n1. Open VS Code with a workspace\n2. Manually set a workspace path using set_workspace\n3. Create a new project using create_project',
-        }],
-      };
-    }
-
-    let choiceText = '📁 **Detected VS Code Workspaces:**\n\n';
-    choiceText += '**Currently Open:**\n';
-    
-    // List running instances first
-    let index = 1;
-    for (const instance of detectedWorkspaces.instances) {
-      for (const workspace of instance.workspaces) {
-        choiceText += `${index}. 🟢 ${workspace.name} (${workspace.path}) - ACTIVE\n`;
-        index++;
-      }
-    }
-
-    if (detectedWorkspaces.recentWorkspaces.length > 0) {
-      choiceText += '\n**Recent Workspaces:**\n';
-      for (const workspace of detectedWorkspaces.recentWorkspaces.slice(0, 10)) {
-        if (!detectedWorkspaces.instances.some(inst => 
-          inst.workspaces.some(ws => ws.path === workspace.path))) {
-          choiceText += `${index}. 📂 ${workspace.name} (${workspace.path})\n`;
-          index++;
-        }
-      }
-    }
-
-    choiceText += '\n**Instructions:**\n';
-    choiceText += '• To use a workspace, tell me the number or path\n';
-    choiceText += '• I can automatically set the most recently used active workspace\n';
-    choiceText += '• Or you can manually specify a different path\n';
-
-    return {
-      content: [{
-        type: 'text',
-        text: choiceText,
-      }],
-    };
+  async presentWorkspaceChoice(): Promise<ToolResult> {
+    return this.smartWorkspaceInit();
   }
 
   /**
@@ -663,5 +695,27 @@ export class VSCodeDetectionService {
     }
 
     return text;
+  }
+
+  /**
+   * Format date for human-readable display
+   */
+  private _formatDate(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   }
 }

@@ -119,7 +119,7 @@ class VSCodeAgentServer {
       case 'present_workspace_choice':
         // For now, just call the method without args since it doesn't need them
         const detectionResult = await this.vsCodeDetectionService.detectWorkspaces();
-        return await this.vsCodeDetectionService.presentWorkspaceChoice({ instances: [], recentWorkspaces: [], totalWorkspaces: 0 });
+        return await this.vsCodeDetectionService.presentWorkspaceChoice();
       case 'auto_select_workspace':
         return await this.vsCodeDetectionService.autoSelectWorkspace();
       case 'smart_workspace_init':

@@ -121,10 +121,13 @@ describe('VSCodeDetectionService', () => {
         totalWorkspaces: 2
       };
       
-      const result = await vsCodeDetectionService.presentWorkspaceChoice(mockDetectionResult);
+      // Mock the internal _performDetection method
+      jest.spyOn(vsCodeDetectionService as any, '_performDetection').mockResolvedValue(mockDetectionResult);
+      
+      const result = await vsCodeDetectionService.presentWorkspaceChoice();
       
       expectValidMcpResponse(result);
-      expect(result.content[0].text).toContain('Detected VS Code Workspaces');
+      expect(result.content[0].text).toContain('VS Code Workspace Detection');
       expect(result.content[0].text).toContain('Currently Open');
       expect(result.content[0].text).toContain('Recent Workspaces');
       expect(result.content[0].text).toContain('project1');
@@ -138,11 +141,14 @@ describe('VSCodeDetectionService', () => {
         totalWorkspaces: 0
       };
       
-      const result = await vsCodeDetectionService.presentWorkspaceChoice(emptyDetectionResult);
+      // Mock the internal _performDetection method
+      jest.spyOn(vsCodeDetectionService as any, '_performDetection').mockResolvedValue(emptyDetectionResult);
+      
+      const result = await vsCodeDetectionService.presentWorkspaceChoice();
       
       expectValidMcpResponse(result);
       expect(result.content[0].text).toContain('No VS Code workspaces detected');
-      expect(result.content[0].text).toContain('Open VS Code with a workspace');
+      expect(result.content[0].text).toContain('Open VS Code with a project folder');
     });
 
     test('should handle only running instances', async () => {
@@ -161,12 +167,14 @@ describe('VSCodeDetectionService', () => {
         totalWorkspaces: 1
       };
       
-      const result = await vsCodeDetectionService.presentWorkspaceChoice(runningOnlyResult);
+      // Mock the internal _performDetection method
+      jest.spyOn(vsCodeDetectionService as any, '_performDetection').mockResolvedValue(runningOnlyResult);
+      
+      const result = await vsCodeDetectionService.presentWorkspaceChoice();
       
       expectValidMcpResponse(result);
       expect(result.content[0].text).toContain('Currently Open');
       expect(result.content[0].text).toContain('active-project');
-      expect(result.content[0].text).toContain('ACTIVE');
     });
   });
 
