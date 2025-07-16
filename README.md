@@ -1,206 +1,261 @@
-# VS Code MCP Server
+# VS Code Agent MCP Server
 
-# VS Code MCP Server
+A comprehensive **Model Context Protocol (MCP) server** that enables AI assistants like Claude to interact seamlessly with VS Code workspaces. This server provides **30+ powerful development tools** for file operations, code execution, Git management, project scaffolding, and intelligent workspace analysis.
 
-A comprehensive Model Context Protocol (MCP) server that enables AI assistants like Claude to interact with VS Code workspaces. This server provides 30+ development tools for file operations, code execution, Git management, project scaffolding, and more.
+[![Test Status](https://img.shields.io/badge/tests-351%20passing-brightgreen)](#testing)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![MCP Protocol](https://img.shields.io/badge/MCP-1.15%2B-purple.svg)](https://modelcontextprotocol.io/)
 
-## 🚀 Features
+## ✨ Key Features
 
-### 📁 File & Workspace Management
-- Read, write, create, and delete files
-- List directory contents and search files
-- Workspace navigation and management
-- File content analysis and search
+### 🎯 **Intelligent Workspace Management**
+- **Smart workspace detection** - Automatically detect VS Code workspaces and running instances
+- **Secure path validation** - Built-in security to prevent unauthorized file access
+- **Workspace history** - Track and switch between recent workspaces
+- **Multi-root workspace support** - Handle complex project structures
 
-### ⚙️ Code Execution
-- **Python**: Execute Python scripts with virtual environment support
-- **JavaScript/Node.js**: Run JavaScript code and Node.js applications  
-- **Shell Commands**: Execute system commands with proper error handling
-- **Process Management**: Start, stop, and monitor background processes
+### 📂 **Advanced File Operations**
+- **Complete CRUD operations** - Create, read, update, delete files and directories
+- **Intelligent search** - Content search with regex, glob patterns, and filtering
+- **Bulk operations** - Copy, move, and manage multiple files efficiently
+- **File metadata** - Access file stats, permissions, and detailed information
+- **Backup support** - Automatic backups for critical file operations
 
-### 🔧 Git Operations
-- Repository initialization and cloning
-- Staging, committing, and pushing changes
-- Branch management and switching
-- Status checking and diff viewing
-- Conflict resolution support
+### ⚡ **Multi-Language Code Execution**
+- **Python** - Execute scripts with virtual environment and package management
+- **JavaScript/Node.js** - Run code with npm integration and dependency handling  
+- **Shell Commands** - Safe system command execution with timeout protection
+- **Background Processes** - Start, monitor, and manage long-running processes
+- **Test Execution** - Run test suites across different frameworks
 
-### 🏗️ Project Scaffolding
-- Create new projects from templates
-- Support for Python, JavaScript, React, Express, and more
-- Automatic dependency installation
-- Configuration file generation
+### 🔧 **Complete Git Integration**
+- **Full Git workflow** - Init, clone, add, commit, push, pull operations
+- **Advanced branching** - Create, switch, merge, and delete branches
+- **Conflict resolution** - Handle merge conflicts and complex scenarios
+- **Repository analysis** - Status checking, diff viewing, and log analysis
+- **Remote management** - Work with multiple remotes and complex topologies
 
-### 🔍 Analysis & Search
-- Code analysis and complexity metrics
-- Dependency analysis and vulnerability scanning
-- File search with glob patterns and content search
-- Project structure analysis
+### 🏗️ **Project Scaffolding & Templates**
+- **Multi-framework support** - Python, Node.js, React, Express, and more
+- **Intelligent templates** - Context-aware project generation
+- **Dependency management** - Automatic package installation and configuration
+- **Best practices** - Generated projects follow industry standards
+- **Custom templates** - Extensible template system
 
-## 📋 Prerequisites
+### 🔍 **Code Analysis & Intelligence**
+- **Static analysis** - Code complexity, quality metrics, and insights
+- **Dependency scanning** - Vulnerability detection and updates
+- **Project structure analysis** - Understand codebase architecture
+- **Search & navigation** - Advanced code search and symbol finding
 
-- **Node.js** 18+ 
-- **pnpm** 8+ (recommended package manager)
-- **VS Code** (any recent version)
-- **Python** 3.8+ (for Python project support)
-- **Git** (for version control features)
-- **Claude AI** or other MCP-compatible AI assistant
+## 📋 Prerequisites & Compatibility
 
-## 🛠️ Installation
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| **Node.js** | 18.0+ | ES Modules support required |
+| **pnpm** | 8.0+ | Recommended package manager |
+| **TypeScript** | 5.0+ | For development and building |
+| **Python** | 3.8+ | Optional, for Python project support |
+| **Git** | 2.0+ | For version control features |
+| **VS Code** | Any recent version | For workspace detection |
+| **Claude Desktop** | Latest | Or other MCP-compatible AI |
 
-### Local Development
+### Operating System Support
+- ✅ **macOS** - Fully supported and tested
+- ✅ **Linux** - Fully supported and tested  
+- ✅ **Windows** - Supported with WSL recommended
 
-1. **Clone the repository:**
+## 🚀 Quick Start Guide
+
+### Method 1: Local Installation (Recommended)
+
+1. **Clone and Setup:**
    ```bash
-   git clone <repository-url>
-   cd vscode-mcp-server
-   ```
-
-2. **Install dependencies:**
-   ```bash
+   git clone <your-repository-url>
+   cd vscode-mcp
    pnpm install
    ```
 
-3. **Build the project:**
+2. **Build the Server:**
    ```bash
    pnpm run build
    ```
 
-4. **Run tests to verify installation:**
+3. **Test Installation:**
    ```bash
+   # Run comprehensive test suite (351 tests)
    pnpm test
+   
+   # Quick verification
+   node dist/src/index.js --version
    ```
 
-### Docker Installation
-
-1. **Using Docker Compose (Recommended):**
+4. **Configure Claude Desktop:**
    ```bash
+   # Copy the included configuration
+   cp claude_desktop_config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   
+   # Or manually add to your Claude config:
+   ```
+   
+   ```json
+   {
+     "mcpServers": {
+       "vscode-agent": {
+         "command": "node",
+         "args": ["/path/to/vscode-mcp/dist/src/index.js"],
+         "env": {
+           "NODE_ENV": "production"
+         }
+       }
+     }
+   }
+   ```
+
+5. **Start Using:**
+   - Restart Claude Desktop
+   - Ask: "*What development tools do you have available?*"
+   - Test: "*Show me the current workspace structure*"
+
+### Method 2: Docker Installation
+
+1. **Quick Docker Setup:**
+   ```bash
+   # Clone and start with Docker Compose
+   git clone <your-repository-url>
+   cd vscode-mcp
    docker-compose up -d
    ```
 
-2. **Using Docker directly:**
-   ```bash
-   docker build -t vscode-mcp-server .
-   docker run -d --name mcp-server vscode-mcp-server
+2. **Configure Claude for Docker:**
+   ```json
+   {
+     "mcpServers": {
+       "vscode-agent": {
+         "command": "docker",
+         "args": ["exec", "-i", "vscode-mcp-server", "node", "/app/dist/src/index.js"],
+         "env": {}
+       }
+     }
+   }
    ```
 
-## 🚀 Usage
-
-### Starting the Server
-
-**Local:**
-```bash
-pnpm start
-```
-
-**Docker:**
-```bash
-docker-compose up
-```
-
-The server runs on stdio and communicates using the MCP protocol.
-
-### Configuration with Claude Desktop
-
-Add this configuration to your Claude MCP settings (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "vscode-mcp-server": {
-      "command": "node",
-      "args": ["/path/to/vscode-mcp-server/dist/src/index.js"],
-      "env": {}
-    }
-  }
-}
-```
-
-For Docker deployment:
-```json
-{
-  "mcpServers": {
-    "vscode-mcp-server": {
-      "command": "docker",
-      "args": ["exec", "-i", "mcp-server", "node", "/app/dist/src/index.js"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Available Tools
-
-The server provides 30+ tools organized into categories:
-
-#### File Operations
-- `read_file` - Read file contents
-- `write_file` - Write content to files
-- `create_file` - Create new files
-- `delete_file` - Delete files
-- `list_files` - List directory contents
-- `search_files` - Search for files by pattern
-
-#### Code Execution  
-- `execute_python` - Run Python code
-- `execute_javascript` - Run JavaScript/Node.js code
-- `execute_command` - Execute shell commands
-- `start_process` - Start background processes
-- `stop_process` - Stop running processes
-
-#### Git Operations
-- `git_init` - Initialize repository
-- `git_status` - Check repository status
-- `git_add` - Stage changes
-- `git_commit` - Commit changes
-- `git_push` - Push to remote
-- `git_pull` - Pull from remote
-- `git_branch` - Manage branches
-
-#### Project Management
-- `create_project` - Create new projects
-- `install_dependencies` - Install project dependencies
-- `analyze_project` - Analyze project structure
-- `scaffold_component` - Create project components
-
-## 🤖 Claude Desktop Integration
-
-### Quick Setup
-
-1. **Build the server:**
+3. **Verify Docker Installation:**
    ```bash
-   pnpm run build
+   # Check container status
+   docker-compose ps
+   
+   # View logs
+   docker-compose logs -f mcp-server
+   
+   # Run tests in container
+   docker-compose run --rm app pnpm test
    ```
 
-2. **Configure Claude Desktop:**
-   ```bash
-   # Copy the configuration file
-   cp claude_desktop_config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
-   ```
+## 🛠️ Complete Tool Reference
 
-3. **Restart Claude Desktop** to load the MCP server
+The server provides **30+ tools** organized by functionality:
 
-4. **Start testing!** Ask Claude: "What tools do you have available?"
+### 📁 File & Directory Operations
+| Tool | Description | Example Use |
+|------|-------------|-------------|
+| `read_file` | Read file contents with encoding support | Read configuration files |
+| `write_file` | Write content to files with backup option | Update code files |
+| `create_file` | Create new files with directory creation | Generate new components |
+| `delete_file` | Delete files with safety checks | Clean up temporary files |
+| `list_directory` | List directory contents with filtering | Explore project structure |
+| `create_directory` | Create directories recursively | Set up folder structure |
+| `delete_directory` | Remove directories safely | Clean up build artifacts |
+| `copy_file` | Copy files with overwrite protection | Duplicate templates |
+| `move_file` | Move/rename files safely | Reorganize code |
+| `search_files` | Advanced file search with patterns | Find specific code files |
+| `get_file_info` | Get detailed file metadata | Check file properties |
 
-### Testing with Claude Desktop
+### ⚡ Code Execution & Development
+| Tool | Description | Example Use |
+|------|-------------|-------------|
+| `execute_python` | Run Python code with venv support | Run data analysis scripts |
+| `execute_javascript` | Execute JavaScript/Node.js code | Test code snippets |
+| `execute_command` | Run shell commands safely | Build projects |
+| `install_python_packages` | Install Python packages via pip | Set up dependencies |
+| `run_npm_command` | Execute npm operations | Install Node packages |
+| `run_tests` | Execute test suites | Run pytest/jest tests |
+| `start_server` | Start development servers | Launch local servers |
+| `stop_server` | Stop running processes | Clean up resources |
+| `list_processes` | View active processes | Monitor running tasks |
 
-Once configured, you can use Claude Desktop to:
+### 🔧 Git & Version Control
+| Tool | Description | Example Use |
+|------|-------------|-------------|
+| `git_status` | Check repository status | Review changes |
+| `git_add` | Stage files for commit | Prepare commits |
+| `git_commit` | Commit staged changes | Save work |
+| `git_push` | Push to remote repository | Share changes |
+| `git_pull` | Pull latest changes | Sync with team |
+| `git_branch` | Manage branches | Feature development |
+| `git_log` | View commit history | Track progress |
+| `git_diff` | Show file differences | Review changes |
+| `execute_git_command` | Run custom git commands | Advanced operations |
 
-- **Explore Projects**: "Show me the workspace structure"
-- **Code Analysis**: "Find all TODO comments in the codebase" 
-- **Run Tests**: "Execute the test suite and show results"
-- **Git Operations**: "Check git status and create a new branch"
-- **File Operations**: "Read the main config file and explain it"
+### 🏗️ Project & Workspace Management
+| Tool | Description | Example Use |
+|------|-------------|-------------|
+| `create_project` | Generate new projects from templates | Start new applications |
+| `get_workspace_info` | Analyze current workspace | Understand project structure |
+| `change_workspace` | Switch working directory | Navigate projects |
+| `list_workspace_history` | View recent workspaces | Quick workspace switching |
+| `detect_vscode_workspaces` | Find VS Code workspaces | Discover projects |
+| `analyze_code` | Perform code analysis | Code quality review |
+| `search_code` | Search within code files | Find implementations |
 
-### Testing with Claude Desktop
+## 🎯 Real-World Usage Examples
 
-Once configured, you can use Claude Desktop to:
+### Example 1: Project Setup and Development
+```
+👤 "Create a new React project called 'my-app' and set up the basic structure"
 
-- **Explore Projects**: "Show me the workspace structure"
-- **Code Analysis**: "Find all TODO comments in the codebase" 
-- **Run Tests**: "Execute the test suite and show results"
-- **Git Operations**: "Check git status and create a new branch"
-- **File Operations**: "Read the main config file and explain it"
+🤖 Claude uses these tools:
+1. create_project (type: "react", name: "my-app")
+2. change_workspace (to the new project directory)
+3. run_npm_command (command: "install")
+4. create_file (for additional configuration)
+```
+
+### Example 2: Code Analysis and Testing
+```
+👤 "Analyze the current codebase and run all tests"
+
+🤖 Claude uses these tools:
+1. get_workspace_info (analyze project structure)
+2. analyze_code (check code quality)
+3. search_files (find test files)
+4. run_tests (execute test suite)
+5. git_status (check for uncommitted changes)
+```
+
+### Example 3: Git Workflow
+```
+👤 "Review my changes, create a feature branch, and commit my work"
+
+🤖 Claude uses these tools:
+1. git_status (check current changes)
+2. git_diff (review modifications)
+3. git_branch (create new feature branch)
+4. git_add (stage changes)
+5. git_commit (save work with message)
+```
+
+### Example 4: Debugging and Investigation
+```
+👤 "Find all TODO comments in the codebase and help me prioritize them"
+
+🤖 Claude uses these tools:
+1. search_code (pattern: "TODO|FIXME|BUG")
+2. read_file (examine files with TODOs)
+3. analyze_code (assess complexity)
+4. get_file_info (check file modification dates)
+```
 
 ## 🧪 Development
 
