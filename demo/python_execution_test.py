@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Simple Python Test Script
 Created by VS Code MCP Server for execution demonstration

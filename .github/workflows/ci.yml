@@ -111,8 +111,8 @@ jobs:
 
     - name: Install pytest and Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-cov
+        python3 -m pip install --upgrade pip
+        pip3 install pytest pytest-cov
 
     - name: Build project
       run: pnpm run build
@@ -124,11 +124,11 @@ jobs:
       run: |
         if [ -f "demo/python_execution_test.py" ]; then
           echo "Running Python execution test..."
-          python demo/python_execution_test.py
+          python3 demo/python_execution_test.py
         fi
         if [ -d "tests" ] && find tests -name "*.py" -type f | grep -q .; then
           echo "Running pytest..."
-          pytest tests/ -v
+          python3 -m pytest tests/ -v
         else
           echo "No Python test files found"
         fi
@@ -283,8 +283,8 @@ jobs:
 
     - name: Install pytest and Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-cov
+        python3 -m pip install --upgrade pip
+        pip3 install pytest pytest-cov
 
     - name: Run demo script
       run: pnpm run demo
@@ -294,11 +294,11 @@ jobs:
       run: |
         if [ -f "demo/python_execution_test.py" ]; then
           echo "Running Python execution test..."
-          python demo/python_execution_test.py
+          python3 demo/python_execution_test.py
         fi
         if [ -d "tests" ] && find tests -name "*.py" -type f | grep -q .; then
           echo "Running pytest..."
-          pytest tests/ -v
+          python3 -m pytest tests/ -v
         else
           echo "No Python test files found"
         fi
