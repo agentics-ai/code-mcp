@@ -66,6 +66,15 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 - ✅ **Linux** - Fully supported and tested  
 - ✅ **Windows** - Supported with WSL recommended
 
+### Claude Desktop Configuration Paths
+| Platform | Configuration Path |
+|----------|-------------------|
+| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
+
+**Note**: The automatic configuration scripts will detect your platform and use the correct path.
+
 ## 🚀 Quick Start Guide
 
 ### Method 1: Local Installation (Recommended)
@@ -94,12 +103,30 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 4. **Configure Claude Desktop:**
    
    **Option A: Automatic Setup (Recommended)**
+   
+   **🍎 macOS/Linux:**
    ```bash
-   # Run the configuration generator script
+   # Run the cross-platform configuration generator script
    ./scripts/generate-claude-config.sh
    ```
    
-   **Option B: Manual Setup**
+   **🪟 Windows (Command Prompt):**
+   ```cmd
+   # Run the Windows batch script
+   scripts\generate-claude-config.bat
+   ```
+   
+   **🪟 Windows (PowerShell):**
+   ```powershell
+   # Run the PowerShell script
+   .\scripts\generate-claude-config.ps1
+   ```
+   
+   **📖 Need detailed setup instructions?** See [scripts/SETUP.md](scripts/SETUP.md) for comprehensive platform-specific guides.
+   
+   **Option B: Manual Setup by Platform**
+   
+   **🍎 macOS:**
    ```bash
    # Create the config directory if it doesn't exist
    mkdir -p ~/Library/Application\ Support/Claude
@@ -107,6 +134,26 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
    # Edit the configuration file
    nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
    ```
+   
+   **🐧 Linux:**
+   ```bash
+   # Create the config directory if it doesn't exist
+   mkdir -p ~/.config/Claude
+   
+   # Edit the configuration file
+   nano ~/.config/Claude/claude_desktop_config.json
+   ```
+   
+   **🪟 Windows:**
+   ```powershell
+   # Create the config directory if it doesn't exist (PowerShell)
+   New-Item -ItemType Directory -Path "$env:APPDATA\Claude" -Force
+   
+   # Edit the configuration file
+   notepad "$env:APPDATA\Claude\claude_desktop_config.json"
+   ```
+   
+   **Configuration Content (All Platforms):**
    
    Add the following configuration (replace `/path/to/vscode-mcp` with your actual path):
    ```json
@@ -123,13 +170,30 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
    }
    ```
    
-   **Example with absolute path:**
+   **Platform-specific examples:**
+   
+   **macOS/Linux:**
    ```json
    {
      "mcpServers": {
        "vscode-agent": {
          "command": "node",
          "args": ["/Users/yourusername/Desktop/vscode-mcp/dist/src/index.js"],
+         "env": {
+           "NODE_ENV": "production"
+         }
+       }
+     }
+   }
+   ```
+   
+   **Windows:**
+   ```json
+   {
+     "mcpServers": {
+       "vscode-agent": {
+         "command": "node",
+         "args": ["C:\\Users\\YourUsername\\Desktop\\vscode-mcp\\dist\\src\\index.js"],
          "env": {
            "NODE_ENV": "production"
          }

@@ -29,8 +29,26 @@ if [[ ! -f "dist/src/index.js" ]]; then
 fi
 
 # Create Claude config directory if it doesn't exist
-CLAUDE_CONFIG_DIR="$HOME/Library/Application Support/Claude"
+# Detect the operating system and set appropriate config directory
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    CLAUDE_CONFIG_DIR="$HOME/Library/Application Support/Claude"
+elif [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "freebsd"* ]]; then
+    # Linux/FreeBSD
+    CLAUDE_CONFIG_DIR="$HOME/.config/Claude"
+elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+    # Windows (Git Bash, MSYS2, Cygwin)
+    CLAUDE_CONFIG_DIR="$APPDATA/Claude"
+else
+    # Fallback to Linux-style config
+    echo "⚠️  Unknown OS type: $OSTYPE. Using Linux-style config directory."
+    CLAUDE_CONFIG_DIR="$HOME/.config/Claude"
+fi
+
 CONFIG_FILE="$CLAUDE_CONFIG_DIR/claude_desktop_config.json"
+
+echo "🖥️  Detected OS: $OSTYPE"
+echo "📁 Config directory: $CLAUDE_CONFIG_DIR"
 
 mkdir -p "$CLAUDE_CONFIG_DIR"
 
