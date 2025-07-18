@@ -1,6 +1,6 @@
 # VS Code Agent MCP Server
 
-A comprehensive **Model Context Protocol (MCP) server** that enables AI assistants like Claude to interact seamlessly with VS Code workspaces. This server provides **30+ powerful development tools** for file operations, code execution, Git management, project scaffolding, and intelligent workspace analysis.
+A comprehensive **Model Context Protocol (MCP) server** that enables AI assistants like Claude to interact seamlessly with VS Code workspaces. This server provides **40+ powerful development tools** for file operations, code execution, Git management, Docker containerization, project scaffolding, and intelligent workspace analysis.
 
 [![Test Status](https://img.shields.io/badge/tests-369%20passing-brightgreen)](#testing)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue.svg)](https://www.typescriptlang.org/)
@@ -36,6 +36,14 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 - **Repository analysis** - Status checking, diff viewing, and log analysis
 - **Remote management** - Work with multiple remotes and complex topologies
 
+### 🐳 **Docker Integration**
+- **Container management** - Build, run, stop, and manage Docker containers
+- **Image operations** - Build custom images, manage registries, and cleanup
+- **Docker Compose** - Multi-container applications and service orchestration
+- **Dockerfile generation** - Auto-generate Dockerfiles for different languages
+- **Network & volume management** - Handle Docker networks and persistent storage
+- **System operations** - Prune unused resources and system management
+
 ### 🏗️ **Project Scaffolding & Templates**
 - **Multi-framework support** - Python, Node.js, React, Express, and more
 - **Intelligent templates** - Context-aware project generation
@@ -57,7 +65,7 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 | **pnpm** | 8.0+ | Recommended package manager |
 | **TypeScript** | 5.0+ | For development and building |
 | **Python** | 3.8+ | Optional, for Python project support |
-| **Git** | 2.0+ | For version control features |
+| **Docker** | 20.10+ | For containerization features |
 | **VS Code** | Any recent version | For workspace detection |
 | **Claude Desktop** | Latest | Or other MCP-compatible AI |
 
@@ -242,41 +250,9 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
    docker-compose run --rm app pnpm test
    ```
 
-## 🛡️ Repository Setup & Security
-
-### Branch Protection Setup
-
-⚠️ **IMPORTANT**: For production use, enable branch protection to prevent unauthorized changes to the main branch.
-
-**Quick Setup:**
-```bash
-# Automatic setup (requires GitHub CLI)
-./scripts/setup-branch-protection.sh
-```
-
-**Manual Setup:**
-1. Go to your repository settings: `Settings → Branches → Add rule`
-2. Set branch name pattern: `main`
-3. Enable the following protections:
-   - ✅ Require pull request reviews (1 approval)
-   - ✅ Require status checks to pass
-   - ✅ Require conversation resolution
-   - ✅ Require linear history
-   - ✅ Include administrators
-
-📖 **Detailed Guide**: [scripts/setup-branch-protection.md](scripts/setup-branch-protection.md)
-
-### Security Features
-
-- 🔒 **Automated dependency scanning** via Dependabot
-- 🛡️ **Security vulnerability alerts** for dependencies
-- 👥 **Code owner reviews** required for sensitive files
-- 🔍 **Automated security checks** in CI/CD pipeline
-- 📝 **Security issue reporting** via GitHub Security Advisories
-
 ## 🛠️ Complete Tool Reference
 
-The server provides **30+ tools** organized by functionality:
+The server provides **40+ tools** organized by functionality:
 
 ### 📁 File & Directory Operations
 | Tool | Description | Example Use |
@@ -318,6 +294,22 @@ The server provides **30+ tools** organized by functionality:
 | `git_log` | View commit history | Track progress |
 | `git_diff` | Show file differences | Review changes |
 | `execute_git_command` | Run custom git commands | Advanced operations |
+
+### 🐳 Docker & Containerization
+| Tool | Description | Example Use |
+|------|-------------|-------------|
+| `docker_check_availability` | Verify Docker installation | Check Docker status |
+| `docker_build` | Build Docker images | Create application images |
+| `docker_run` | Run Docker containers | Start applications |
+| `docker_compose` | Manage multi-container apps | Orchestrate services |
+| `docker_images` | Manage Docker images | List, remove, tag images |
+| `docker_containers` | Manage containers | List, stop, remove containers |
+| `docker_networks` | Manage Docker networks | Create custom networks |
+| `docker_volumes` | Manage Docker volumes | Handle persistent storage |
+| `docker_system` | System-wide operations | Prune unused resources |
+| `generate_dockerfile` | Auto-generate Dockerfiles | Create container configs |
+| `generate_docker_compose` | Create compose files | Multi-service setup |
+| `docker_cleanup` | Clean up containers | Remove tracked containers |
 
 ### 🏗️ Project & Workspace Management
 | Tool | Description | Example Use |
@@ -367,7 +359,19 @@ The server provides **30+ tools** organized by functionality:
 5. git_commit (save work with message)
 ```
 
-### Example 4: Debugging and Investigation
+### Example 4: Docker Development Workflow
+```
+👤 "Create a Dockerfile for my Node.js app and set up a development environment"
+
+🤖 Claude uses these tools:
+1. docker_check_availability (verify Docker is installed)
+2. generate_dockerfile (language: "nodejs", framework: "express")
+3. docker_build (build the application image)
+4. generate_docker_compose (with database service)
+5. docker_compose (start the development environment)
+```
+
+### Example 5: Debugging and Investigation
 ```
 👤 "Find all TODO comments in the codebase and help me prioritize them"
 
@@ -390,13 +394,15 @@ src/
 ├── types.ts             # TypeScript type definitions
 ├── utils.ts             # Utility functions
 └── services/            # Service implementations
-    ├── FileService.ts       # File operations
+    ├── AnalysisService.ts       # Code analysis
     ├── CodeExecutionService.ts  # Code execution
-    ├── GitService.ts        # Git operations
-    ├── ProjectService.ts    # Project management
-    ├── WorkspaceService.ts  # Workspace operations
-    ├── ProcessService.ts    # Process management
-    └── AnalysisService.ts   # Code analysis
+    ├── DockerService.ts         # Docker operations
+    ├── FileService.ts           # File operations
+    ├── GitService.ts            # Git operations
+    ├── ProcessService.ts        # Process management
+    ├── ProjectService.ts        # Project management
+    ├── VSCodeDetectionService.ts # VS Code detection
+    └── WorkspaceService.ts      # Workspace operations
 
 tests/
 ├── integration.test.ts      # Integration tests
@@ -481,21 +487,23 @@ The project uses modern TypeScript with ES modules:
 
 ## 🤝 Contributing
 
+We welcome contributions to the VS Code Agent MCP Server! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on:
+
+- 🚀 Getting started with development
+- 📝 Code style and standards  
+- 🧪 Testing requirements
+- 📋 Pull request process
+- 🐛 Bug reporting
+- 💡 Feature requests
+
+**Quick Start for Contributors:**
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes and add tests
-4. Run tests: `pnpm test`
-5. Commit your changes: `git commit -am 'Add feature'`
-6. Push to the branch: `git push origin feature-name`
-7. Submit a pull request
+4. Run the full test suite: `pnpm test`
+5. Submit a pull request
 
-### Development Guidelines
-
-- Write TypeScript with strict typing
-- Add unit tests for new features
-- Follow existing code style and patterns
-- Update documentation for new tools
-- Ensure all tests pass before submitting
+For detailed instructions, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📝 License
 
