@@ -6,6 +6,8 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![MCP Protocol](https://img.shields.io/badge/MCP-1.15%2B-purple.svg)](https://modelcontextprotocol.io/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-agentics--ai%2Fvscode--mcp-blue.svg)](https://github.com/agentics-ai/vscode-mcp)
 
 ## ✨ Key Features
 
@@ -89,7 +91,7 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 
 1. **Clone and Setup:**
    ```bash
-   git clone <your-repository-url>
+   git clone https://github.com/agentics-ai/vscode-mcp.git
    cd vscode-mcp
    pnpm install
    ```
@@ -220,7 +222,7 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 1. **Quick Docker Setup:**
    ```bash
    # Clone and start with Docker Compose
-   git clone <your-repository-url>
+   git clone https://github.com/agentics-ai/vscode-mcp.git
    cd vscode-mcp
    docker-compose up -d
    ```

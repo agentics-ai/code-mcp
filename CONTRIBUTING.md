@@ -54,7 +54,7 @@ Before contributing, ensure you have:
 2. **Set Up Remote**
    ```bash
    # Add upstream remote
-   git remote add upstream https://github.com/ORIGINAL_OWNER/vscode-mcp.git
+   git remote add upstream https://github.com/agentics-ai/vscode-mcp.git
    
    # Verify remotes
    git remote -v
@@ -571,7 +571,7 @@ Add any other context about the problem here.
 For security vulnerabilities:
 
 1. **Do NOT** create a public issue
-2. **Email** security issues to: [security@yourproject.com]
+2. **Use GitHub Security Advisories** to report security vulnerabilities privately
 3. **Include** detailed reproduction steps
 4. **Wait** for confirmation before public disclosure
 
