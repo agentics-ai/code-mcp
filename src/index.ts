@@ -9,8 +9,7 @@ import {
   ErrorCode,
   ListToolsRequestSchema,
   McpError,
-  CallToolRequest,
-  ListToolsRequest,
+  CallToolRequest
 } from '@modelcontextprotocol/sdk/types.js';
 
 // Import configuration and tool definitions
@@ -27,6 +26,17 @@ import {
   TestExecutionArgs, 
   NpmCommandArgs 
 } from './services/CodeExecutionService.js';
+import { 
+  DockerService,
+  DockerBuildArgs,
+  DockerRunArgs,
+  DockerComposeArgs,
+  DockerImageArgs,
+  DockerContainerArgs,
+  DockerNetworkArgs,
+  DockerVolumeArgs,
+  DockerSystemArgs
+} from './services/DockerService.js';
 import { 
   GitService, 
   GitCommitArgs, 
@@ -46,6 +56,7 @@ class VSCodeAgentServer {
   private workspaceService: WorkspaceService;
   private fileService: FileService;
   private codeExecutionService: CodeExecutionService;
+  private dockerService: DockerService;
   private gitService: GitService;
   private processService: ProcessService;
   private analysisService: AnalysisService;
@@ -69,6 +80,7 @@ class VSCodeAgentServer {
     this.workspaceService = new WorkspaceService();
     this.fileService = new FileService(this.workspaceService);
     this.codeExecutionService = new CodeExecutionService(this.workspaceService);
+    this.dockerService = new DockerService(this.workspaceService);
     this.gitService = new GitService(this.workspaceService);
     this.processService = new ProcessService(this.workspaceService);
     this.analysisService = new AnalysisService(this.workspaceService, this.fileService);
@@ -170,6 +182,32 @@ class VSCodeAgentServer {
         return await this.gitService.gitBranch(args as GitBranchArgs);
       case 'git_log':
         return await this.gitService.gitLog(args);
+      
+      // Docker Operations
+      case 'docker_check_availability':
+        return await this.dockerService.checkDockerAvailability();
+      case 'docker_build':
+        return await this.dockerService.buildImage(args as DockerBuildArgs);
+      case 'docker_run':
+        return await this.dockerService.runContainer(args as DockerRunArgs);
+      case 'docker_compose':
+        return await this.dockerService.dockerCompose(args as DockerComposeArgs);
+      case 'docker_images':
+        return await this.dockerService.manageImages(args as DockerImageArgs);
+      case 'docker_containers':
+        return await this.dockerService.manageContainers(args as DockerContainerArgs);
+      case 'docker_networks':
+        return await this.dockerService.manageNetworks(args as DockerNetworkArgs);
+      case 'docker_volumes':
+        return await this.dockerService.manageVolumes(args as DockerVolumeArgs);
+      case 'docker_system':
+        return await this.dockerService.systemOperations(args as DockerSystemArgs);
+      case 'generate_dockerfile':
+        return await this.dockerService.generateDockerfile(args.language, args.framework);
+      case 'generate_docker_compose':
+        return await this.dockerService.generateDockerCompose(args.services, args.include_database);
+      case 'docker_cleanup':
+        return await this.dockerService.cleanupTrackedContainers();
       
       // Code Analysis
       case 'analyze_code':

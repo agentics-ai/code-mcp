@@ -12,11 +12,7 @@ import fsSync from 'fs';
 
 import { FileService } from '../../src/services/FileService.js';
 import { WorkspaceService } from '../../src/services/WorkspaceService.js';
-import { TestUtils, TestWorkspace } from '../utils.js';
-import { ToolResult } from '../../src/types.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { TestUtils } from '../utils.js';
 
 describe('FileService', () => {
   let fileService: FileService;

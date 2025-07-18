@@ -2,7 +2,7 @@
  * Process management service for development servers and background tasks
  * Optimized version that addresses hanging/timeout issues
  */
-import { spawn, ChildProcess } from 'child_process';
+import { spawn } from 'child_process';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { ProcessUtils, ValidationUtils, ProcessInfo } from '../utils.js';

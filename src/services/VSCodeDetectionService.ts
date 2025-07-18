@@ -7,9 +7,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { VSCODE_DETECTION } from '../constants.js';
 import { VSCodeWorkspace, VSCodeInstance, VSCodeDetectionResult, ToolResult } from '../types.js';
-import { ValidationUtils } from '../utils.js';
 
 const execAsync = promisify(exec);
 

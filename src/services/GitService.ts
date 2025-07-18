@@ -5,7 +5,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { ValidationUtils } from '../utils.js';
 import { GIT_ACTIONS, GitAction } from '../constants.js';
-import { ToolResult, GitStatus, GitCommit, GitDiff } from '../types.js';
+import { ToolResult } from '../types.js';
 import { WorkspaceService } from './WorkspaceService.js';
 
 const execAsync = promisify(exec);

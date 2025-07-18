@@ -8,7 +8,7 @@ import path from 'path';
 import os from 'os';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { DEFAULT_LIMITS } from '../constants.js';
-import { ToolResult, WorkspaceFolder, FileInfo } from '../types.js';
+import { ToolResult, FileInfo } from '../types.js';
 
 export interface WorkspaceInfo {
   path: string;

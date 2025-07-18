@@ -2,7 +2,7 @@
 
 A comprehensive **Model Context Protocol (MCP) server** that enables AI assistants like Claude to interact seamlessly with VS Code workspaces. This server provides **30+ powerful development tools** for file operations, code execution, Git management, project scaffolding, and intelligent workspace analysis.
 
-[![Test Status](https://img.shields.io/badge/tests-351%20passing-brightgreen)](#testing)
+[![Test Status](https://img.shields.io/badge/tests-369%20passing-brightgreen)](#testing)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![MCP Protocol](https://img.shields.io/badge/MCP-1.15%2B-purple.svg)](https://modelcontextprotocol.io/)
@@ -93,7 +93,7 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 
 3. **Test Installation:**
    ```bash
-   # Run comprehensive test suite (351 tests)
+   # Run comprehensive test suite (369 tests)
    pnpm test
    
    # Quick verification

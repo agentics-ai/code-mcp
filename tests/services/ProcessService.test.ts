@@ -15,9 +15,6 @@ import { ToolResult } from '../../src/types.js';
 // Set test environment for shorter delays
 process.env.NODE_ENV = 'test';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 // Helper function to validate MCP responses
 function expectValidMcpResponse(result: ToolResult): void {
   expect(result).toBeDefined();

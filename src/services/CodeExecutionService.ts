@@ -2,13 +2,9 @@
  * Code execution service for Python, JavaScript, and shell commands
  * FIXED VERSION: Better timeout handling and long-running command support
  */
-import { spawn, ChildProcess } from 'child_process';
-import { promisify } from 'util';
-import * as path from 'path';
-import * as fs from 'fs/promises';
-import { StringUtils, ValidationUtils } from '../utils.js';
-import { SUPPORTED_LANGUAGES } from '../constants.js';
-import { ToolResult, ProcessResult, ProcessOptions } from '../types.js';
+import { spawn } from 'child_process';
+import { ValidationUtils } from '../utils.js';
+import { ToolResult } from '../types.js';
 import { WorkspaceService } from './WorkspaceService.js';
 
 export interface PythonExecutionArgs {

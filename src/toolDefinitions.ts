@@ -407,4 +407,222 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {},
     },
   },
+
+  // Docker Management
+  {
+    name: 'docker_check_availability',
+    description: 'Check if Docker is installed and available',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'docker_build',
+    description: 'Build a Docker image from a Dockerfile',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        context: { type: 'string', description: 'Build context path (default: current directory)' },
+        dockerfile: { type: 'string', description: 'Path to Dockerfile (relative to context)' },
+        tag: { type: 'string', description: 'Tag for the built image (e.g., myapp:latest)' },
+        build_args: { type: 'object', description: 'Build arguments as key-value pairs' },
+        target: { type: 'string', description: 'Target stage for multi-stage builds' },
+        no_cache: { type: 'boolean', description: 'Do not use cache when building' },
+        pull: { type: 'boolean', description: 'Always attempt to pull newer version of base image' },
+        platform: { type: 'string', description: 'Target platform (e.g., linux/amd64, linux/arm64)' },
+      },
+    },
+  },
+  {
+    name: 'docker_run',
+    description: 'Run a Docker container',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        image: { type: 'string', description: 'Docker image to run' },
+        name: { type: 'string', description: 'Container name' },
+        command: { type: 'string', description: 'Command to run in container' },
+        args: { type: 'array', items: { type: 'string' }, description: 'Command arguments' },
+        ports: { type: 'array', items: { type: 'string' }, description: 'Port mappings (e.g., ["8080:80", "3000:3000"])' },
+        volumes: { type: 'array', items: { type: 'string' }, description: 'Volume mounts (e.g., ["/host/path:/container/path"])' },
+        env: { type: 'object', description: 'Environment variables as key-value pairs' },
+        detach: { type: 'boolean', description: 'Run container in background' },
+        remove: { type: 'boolean', description: 'Remove container when it exits' },
+        interactive: { type: 'boolean', description: 'Keep STDIN open' },
+        tty: { type: 'boolean', description: 'Allocate a pseudo-TTY' },
+        network: { type: 'string', description: 'Network to connect container to' },
+        working_dir: { type: 'string', description: 'Working directory inside container' },
+        user: { type: 'string', description: 'Username or UID (format: <name|uid>[:<group|gid>])' },
+        memory: { type: 'string', description: 'Memory limit (e.g., "512m", "2g")' },
+        cpus: { type: 'string', description: 'CPU limit (e.g., "0.5", "2")' },
+        restart: { type: 'string', description: 'Restart policy (no, on-failure, always, unless-stopped)' },
+      },
+      required: ['image'],
+    },
+  },
+  {
+    name: 'docker_compose',
+    description: 'Manage Docker Compose services',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { 
+          type: 'string', 
+          enum: ['up', 'down', 'build', 'logs', 'ps', 'exec', 'restart', 'stop', 'start', 'pull'],
+          description: 'Docker Compose action to perform' 
+        },
+        service: { type: 'string', description: 'Specific service to target' },
+        file: { type: 'string', description: 'Docker Compose file path (default: docker-compose.yml)' },
+        detach: { type: 'boolean', description: 'Run in background (for up action)' },
+        build: { type: 'boolean', description: 'Build images before starting (for up action)' },
+        force_recreate: { type: 'boolean', description: 'Force recreate containers' },
+        remove_orphans: { type: 'boolean', description: 'Remove containers for services not defined in compose file' },
+        follow: { type: 'boolean', description: 'Follow log output (for logs action)' },
+        tail: { type: 'number', description: 'Number of lines to show from end of logs' },
+        command: { type: 'string', description: 'Command to execute (for exec action)' },
+        project_name: { type: 'string', description: 'Project name for compose stack' },
+      },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'docker_images',
+    description: 'Manage Docker images (list, pull, push, remove, etc.)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { 
+          type: 'string', 
+          enum: ['list', 'pull', 'push', 'remove', 'tag', 'inspect', 'prune', 'history'],
+          description: 'Action to perform on images' 
+        },
+        image: { type: 'string', description: 'Image name or ID' },
+        tag: { type: 'string', description: 'Tag for image operations' },
+        force: { type: 'boolean', description: 'Force removal or operation' },
+        all: { type: 'boolean', description: 'Apply to all images (for list/prune)' },
+        filter: { type: 'string', description: 'Filter results (e.g., "dangling=true")' },
+      },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'docker_containers',
+    description: 'Manage Docker containers (list, start, stop, remove, etc.)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { 
+          type: 'string', 
+          enum: ['list', 'start', 'stop', 'restart', 'remove', 'inspect', 'logs', 'exec', 'stats'],
+          description: 'Action to perform on containers' 
+        },
+        container: { type: 'string', description: 'Container name or ID' },
+        command: { type: 'string', description: 'Command to execute (for exec action)' },
+        follow: { type: 'boolean', description: 'Follow log output (for logs action)' },
+        tail: { type: 'number', description: 'Number of lines to show from end of logs' },
+        all: { type: 'boolean', description: 'Show all containers including stopped ones' },
+        force: { type: 'boolean', description: 'Force operation' },
+        volumes: { type: 'boolean', description: 'Remove associated volumes (for remove action)' },
+      },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'docker_networks',
+    description: 'Manage Docker networks',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { 
+          type: 'string', 
+          enum: ['list', 'create', 'remove', 'inspect', 'connect', 'disconnect'],
+          description: 'Action to perform on networks' 
+        },
+        network: { type: 'string', description: 'Network name or ID' },
+        container: { type: 'string', description: 'Container to connect/disconnect' },
+        driver: { type: 'string', description: 'Network driver (bridge, overlay, host, etc.)' },
+        subnet: { type: 'string', description: 'Subnet for network (e.g., 172.20.0.0/16)' },
+        gateway: { type: 'string', description: 'Gateway for network' },
+      },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'docker_volumes',
+    description: 'Manage Docker volumes',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { 
+          type: 'string', 
+          enum: ['list', 'create', 'remove', 'inspect', 'prune'],
+          description: 'Action to perform on volumes' 
+        },
+        volume: { type: 'string', description: 'Volume name' },
+        driver: { type: 'string', description: 'Volume driver' },
+        force: { type: 'boolean', description: 'Force operation' },
+        filter: { type: 'string', description: 'Filter results' },
+      },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'docker_system',
+    description: 'Docker system operations and information',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { 
+          type: 'string', 
+          enum: ['info', 'version', 'events', 'df', 'prune'],
+          description: 'System action to perform' 
+        },
+        all: { type: 'boolean', description: 'Apply to all resources (for prune)' },
+        volumes: { type: 'boolean', description: 'Include volumes in operation' },
+        force: { type: 'boolean', description: 'Force operation without confirmation' },
+      },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'generate_dockerfile',
+    description: 'Generate a Dockerfile template for a specific language/framework',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        language: { 
+          type: 'string', 
+          enum: ['node', 'nodejs', 'javascript', 'typescript', 'python', 'java', 'go', 'rust'],
+          description: 'Programming language for the Dockerfile' 
+        },
+        framework: { type: 'string', description: 'Framework-specific optimizations (e.g., alpine, express, fastapi)' },
+      },
+      required: ['language'],
+    },
+  },
+  {
+    name: 'generate_docker_compose',
+    description: 'Generate a Docker Compose file template',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        services: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'List of service names to include' 
+        },
+        include_database: { type: 'boolean', description: 'Include database services (PostgreSQL, Redis)' },
+      },
+      required: ['services'],
+    },
+  },
+  {
+    name: 'docker_cleanup',
+    description: 'Clean up tracked Docker containers and resources',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ] as const;

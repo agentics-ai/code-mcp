@@ -3,10 +3,7 @@
  */
 import fs from 'fs/promises';
 import path from 'path';
-import crypto from 'crypto';
-import { createReadStream } from 'fs';
-import { PathUtils } from '../utils.js';
-import { ToolResult, FileInfo, FileContent, SearchOptions } from '../types.js';
+import { ToolResult, FileInfo, SearchOptions } from '../types.js';
 import { WorkspaceService } from './WorkspaceService.js';
 
 export interface FileReadOptions {

@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { TestUtils, TestFixtures, TestWorkspace, TestStructure } from './utils.js';
+import { TestUtils, TestFixtures, TestStructure } from './utils.js';
 import fs from 'fs';
 import path from 'path';
 

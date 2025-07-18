@@ -7,7 +7,6 @@ import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { ProjectService } from '../../src/services/ProjectService.js';
 import { TestUtils } from '../utils.js';
 import { WorkspaceService } from '../../src/services/WorkspaceService.js';
-import { ToolResult } from '../../src/types.js';
 import { PROJECT_TYPES } from '../../src/constants.js';
 import fs from 'fs/promises';
 import path from 'path';
