@@ -1463,4 +1463,249 @@ services:
 
     return content;
   }
+
+  // ==========================================
+  // FOCUSED DOCKER TOOL HANDLERS - Better Token Efficiency
+  // ==========================================
+
+  /**
+   * Start Docker Compose services (focused action)
+   */
+  async dockerComposeUp(args: {
+    file?: string;
+    services?: string[];
+    detach?: boolean;
+    build?: boolean;
+    project_name?: string;
+  }): Promise<ToolResult> {
+    const composeArgs: DockerComposeArgs = {
+      action: 'up',
+      file: args.file,
+      service: args.services?.[0], // Docker Compose handles multiple services in the command
+      detach: args.detach,
+      build: args.build,
+      project_name: args.project_name
+    };
+    return this.dockerCompose(composeArgs);
+  }
+
+  /**
+   * Stop and remove Docker Compose services (focused action)
+   */
+  async dockerComposeDown(args: {
+    file?: string;
+    volumes?: boolean;
+    remove_orphans?: boolean;
+    project_name?: string;
+  }): Promise<ToolResult> {
+    const composeArgs: DockerComposeArgs = {
+      action: 'down',
+      file: args.file,
+      remove_volumes: args.volumes,
+      remove_orphans: args.remove_orphans,
+      project_name: args.project_name
+    };
+    return this.dockerCompose(composeArgs);
+  }
+
+  /**
+   * View Docker Compose service logs (focused action)
+   */
+  async dockerComposeLogs(args: {
+    file?: string;
+    services?: string[];
+    follow?: boolean;
+    tail?: number;
+    project_name?: string;
+  }): Promise<ToolResult> {
+    const composeArgs: DockerComposeArgs = {
+      action: 'logs',
+      file: args.file,
+      service: args.services?.[0],
+      follow: args.follow,
+      tail: args.tail,
+      project_name: args.project_name
+    };
+    return this.dockerCompose(composeArgs);
+  }
+
+  /**
+   * Restart Docker Compose services (focused action)
+   */
+  async dockerComposeRestart(args: {
+    file?: string;
+    services?: string[];
+    project_name?: string;
+  }): Promise<ToolResult> {
+    const composeArgs: DockerComposeArgs = {
+      action: 'restart',
+      file: args.file,
+      service: args.services?.[0],
+      project_name: args.project_name
+    };
+    return this.dockerCompose(composeArgs);
+  }
+
+  /**
+   * Start a Docker container (focused action)
+   */
+  async dockerContainerStart(args: { container: string }): Promise<ToolResult> {
+    const containerArgs: DockerContainerArgs = {
+      action: 'start',
+      container: args.container
+    };
+    return this.manageContainers(containerArgs);
+  }
+
+  /**
+   * Stop a Docker container (focused action)
+   */
+  async dockerContainerStop(args: { container: string; timeout?: number }): Promise<ToolResult> {
+    const containerArgs: DockerContainerArgs = {
+      action: 'stop',
+      container: args.container,
+      time: args.timeout
+    };
+    return this.manageContainers(containerArgs);
+  }
+
+  /**
+   * Restart a Docker container (focused action)
+   */
+  async dockerContainerRestart(args: { container: string; timeout?: number }): Promise<ToolResult> {
+    const containerArgs: DockerContainerArgs = {
+      action: 'restart',
+      container: args.container,
+      time: args.timeout
+    };
+    return this.manageContainers(containerArgs);
+  }
+
+  /**
+   * Remove a Docker container (focused action)
+   */
+  async dockerContainerRemove(args: { 
+    container: string; 
+    force?: boolean; 
+    volumes?: boolean 
+  }): Promise<ToolResult> {
+    const containerArgs: DockerContainerArgs = {
+      action: 'remove',
+      container: args.container,
+      force: args.force,
+      volumes: args.volumes
+    };
+    return this.manageContainers(containerArgs);
+  }
+
+  /**
+   * Get Docker container logs (focused action)
+   */
+  async dockerContainerLogs(args: {
+    container: string;
+    follow?: boolean;
+    tail?: number;
+    since?: string;
+  }): Promise<ToolResult> {
+    const containerArgs: DockerContainerArgs = {
+      action: 'logs',
+      container: args.container,
+      follow: args.follow,
+      tail: args.tail,
+      since: args.since
+    };
+    return this.manageContainers(containerArgs);
+  }
+
+  /**
+   * Execute command in running Docker container (focused action)
+   */
+  async dockerContainerExec(args: {
+    container: string;
+    command: string;
+    interactive?: boolean;
+    tty?: boolean;
+  }): Promise<ToolResult> {
+    const containerArgs: DockerContainerArgs = {
+      action: 'exec',
+      container: args.container,
+      command: args.command,
+      interactive: args.interactive,
+      tty: args.tty
+    };
+    return this.manageContainers(containerArgs);
+  }
+
+  /**
+   * Pull a Docker image from registry (focused action)
+   */
+  async dockerImagePull(args: { image: string; all_tags?: boolean }): Promise<ToolResult> {
+    const imageArgs: DockerImageArgs = {
+      action: 'pull',
+      image: args.image,
+      all: args.all_tags
+    };
+    return this.manageImages(imageArgs);
+  }
+
+  /**
+   * Push a Docker image to registry (focused action)
+   */
+  async dockerImagePush(args: { image: string; all_tags?: boolean }): Promise<ToolResult> {
+    const imageArgs: DockerImageArgs = {
+      action: 'push',
+      image: args.image,
+      all: args.all_tags
+    };
+    return this.manageImages(imageArgs);
+  }
+
+  /**
+   * Remove Docker image(s) (focused action)
+   */
+  async dockerImageRemove(args: {
+    image: string;
+    force?: boolean;
+    no_prune?: boolean;
+  }): Promise<ToolResult> {
+    const imageArgs: DockerImageArgs = {
+      action: 'remove',
+      image: args.image,
+      force: args.force,
+      no_prune: args.no_prune
+    };
+    return this.manageImages(imageArgs);
+  }
+
+  /**
+   * Build Docker image from Dockerfile (focused action)
+   */
+  async dockerImageBuild(args: {
+    context?: string;
+    dockerfile?: string;
+    tag?: string;
+    build_args?: Record<string, string>;
+    no_cache?: boolean;
+  }): Promise<ToolResult> {
+    const buildArgs: DockerBuildArgs = {
+      context: args.context,
+      dockerfile: args.dockerfile,
+      tag: args.tag,
+      build_args: args.build_args,
+      no_cache: args.no_cache
+    };
+    return this.buildImage(buildArgs);
+  }
+
+  /**
+   * Tag a Docker image (focused action)
+   */
+  async dockerImageTag(args: { source: string; target: string }): Promise<ToolResult> {
+    const imageArgs: DockerImageArgs = {
+      action: 'tag',
+      image: args.source,
+      tag: args.target
+    };
+    return this.manageImages(imageArgs);
+  }
 }

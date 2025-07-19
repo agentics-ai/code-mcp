@@ -13,6 +13,10 @@ export { ProjectService } from './ProjectService.js';
 export { VSCodeDetectionService } from './VSCodeDetectionService.js';
 export { WorkspaceService } from './WorkspaceService.js';
 
+// Enhanced services with codemcp-inspired improvements
+export { ProjectConfigService } from './ProjectConfigService.js';
+export { SecureCommandService } from './SecureCommandService.js';
+
 // Export types/interfaces
 export type {
   PythonExecutionArgs,

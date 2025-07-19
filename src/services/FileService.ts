@@ -1,10 +1,14 @@
 /**
- * File operations service - Optimized version
+ * File operations service - Enhanced with formatting and auto-commit capabilities
  */
 import fs from 'fs/promises';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { ToolResult, FileInfo, SearchOptions } from '../types.js';
 import { WorkspaceService } from './WorkspaceService.js';
+
+const execAsync = promisify(exec);
 
 export interface FileReadOptions {
   encoding?: BufferEncoding;
@@ -15,6 +19,10 @@ export interface FileWriteOptions {
   encoding?: BufferEncoding;
   backup?: boolean;
   createBackup?: boolean;
+  skipAutoFormat?: boolean;
+  skipAutoCommit?: boolean;
+  commitMessage?: string;
+  formatCommand?: string;
 }
 
 export interface DirectoryListOptions {
@@ -30,6 +38,45 @@ export interface DirectoryListOptions {
 export interface FileCopyOptions {
   overwrite?: boolean;
   preserveTimestamps?: boolean;
+}
+
+// Enhanced diff management interfaces
+export interface DiffOptions {
+  format?: 'unified' | 'side-by-side' | 'inline' | 'context';
+  contextLines?: number;
+  ignoreWhitespace?: boolean;
+  ignoreCase?: boolean;
+  wordDiff?: boolean;
+  colorOutput?: boolean;
+}
+
+export interface FileDiffOptions extends DiffOptions {
+  file1: string;
+  file2: string;
+  label1?: string;
+  label2?: string;
+}
+
+export interface PatchOptions {
+  dryRun?: boolean;
+  reverse?: boolean;
+  stripPaths?: number;
+  backup?: boolean;
+}
+
+export interface FileComparisonResult {
+  identical: boolean;
+  differences: Array<{
+    line: number;
+    type: 'added' | 'removed' | 'modified';
+    content: string;
+    oldContent?: string;
+  }>;
+  stats: {
+    linesAdded: number;
+    linesRemoved: number;
+    linesModified: number;
+  };
 }
 
 interface FileStats {
@@ -116,7 +163,15 @@ export class FileService {
   async writeFile(filePath: string, content: string, options: FileWriteOptions = {}): Promise<ToolResult> {
     try {
       const fullPath = this.workspaceService.resolvePath(filePath);
-      const { encoding = 'utf-8', backup = false, createBackup = false } = options;
+      const { 
+        encoding = 'utf-8', 
+        backup = false, 
+        createBackup = false,
+        skipAutoFormat = false,
+        skipAutoCommit = false,
+        commitMessage,
+        formatCommand
+      } = options;
       
       // Create backup if requested (support both backup and createBackup options)
       const shouldBackup = backup || createBackup;
@@ -130,6 +185,42 @@ export class FileService {
       
       // Clear cache for this file
       this.clearStatsCache(fullPath);
+      
+      // Auto-format file if requested
+      if (!skipAutoFormat && formatCommand) {
+        try {
+          await execAsync(formatCommand.replace(/\{\{file\}\}/g, fullPath));
+        } catch (formatError) {
+          return {
+            isError: true,
+            content: [{
+              type: 'text',
+              text: `Failed to auto-format file: ${formatError instanceof Error ? formatError.message : String(formatError)}`
+            }]
+          };
+        }
+      }
+      
+      // Auto-commit changes if requested
+      if (!skipAutoCommit && commitMessage) {
+        try {
+          // First check if we're in a git repository
+          await execAsync('git rev-parse --git-dir');
+          
+          const gitAddCommand = `git add ${JSON.stringify(fullPath)}`;
+          await execAsync(gitAddCommand);
+          
+          const gitCommitCommand = `git commit -m ${JSON.stringify(commitMessage)}`;
+          await execAsync(gitCommitCommand);
+        } catch (commitError) {
+          // Silently skip auto-commit if not in a git repository
+          const errorMessage = commitError instanceof Error ? commitError.message : String(commitError);
+          if (!errorMessage.includes('not a git repository') && !errorMessage.includes('Not a git repository')) {
+            console.warn(`Auto-commit skipped: ${errorMessage}`);
+          }
+          // Don't return error - just continue without committing
+        }
+      }
       
       const stats = await this.getFileStats(fullPath);
       return {
@@ -752,5 +843,747 @@ export class FileService {
         }
       }
     }
+  }
+
+  /**
+   * Format a file using the provided format command
+   */
+  async formatFile(filePath: string, formatCommand?: string): Promise<ToolResult> {
+    if (!formatCommand) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'No format command provided'
+        }]
+      };
+    }
+
+    try {
+      const fullPath = this.workspaceService.resolvePath(filePath);
+      const command = formatCommand.replace(/\{\{file\}\}/g, fullPath);
+      
+      const cwd = this.workspaceService.workspacePath;
+      await execAsync(command, { cwd });
+
+      return {
+        content: [{
+          type: 'text',
+          text: `File formatted successfully: ${filePath}`
+        }]
+      };
+
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `File formatting failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Create a new file with optional formatting and auto-commit
+   */
+  async createFile(filePath: string, content: string, options: FileWriteOptions = {}): Promise<ToolResult> {
+    // Only set commitMessage if explicitly provided in options
+    if (options.commitMessage) {
+      return this.writeFile(filePath, content, options);
+    } else {
+      // Skip auto-commit by default for createFile unless explicitly requested
+      return this.writeFile(filePath, content, { ...options, skipAutoCommit: true });
+    }
+  }
+
+  /**
+   * Format the entire project using common formatting tools
+   */
+  async formatProject(): Promise<ToolResult> {
+    try {
+      const cwd = this.workspaceService.workspacePath;
+      const results: string[] = [];
+
+      // Try Prettier first (most common)
+      try {
+        await execAsync('npx prettier --write .', { cwd });
+        results.push('Prettier formatting completed');
+      } catch (error) {
+        // Prettier not available or failed, try other formatters
+      }
+
+      // Try ESLint with --fix
+      try {
+        await execAsync('npx eslint --fix .', { cwd });
+        results.push('ESLint auto-fix completed');
+      } catch (error) {
+        // ESLint not available or failed
+      }
+
+      // Try TypeScript compiler for type checking
+      try {
+        await execAsync('npx tsc --noEmit', { cwd });
+        results.push('TypeScript type checking passed');
+      } catch (error) {
+        // TypeScript not available or has errors
+      }
+
+      if (results.length === 0) {
+        return {
+          content: [{
+            type: 'text',
+            text: 'No formatting tools found or available. Consider installing Prettier, ESLint, or other code formatters.'
+          }]
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: `Project formatting completed:\n${results.join('\n')}`
+        }]
+      };
+
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Project formatting failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  // ==========================================
+  // ENHANCED FILE OPERATIONS & DIFF MANAGEMENT
+  // ==========================================
+
+  /**
+   * Compare two files and show differences
+   */
+  async compareFiles(options: FileDiffOptions): Promise<ToolResult> {
+    try {
+      const { file1, file2, format = 'unified', contextLines = 3, ignoreWhitespace = false, wordDiff = false } = options;
+      
+      const fullPath1 = this.workspaceService.resolvePath(file1);
+      const fullPath2 = this.workspaceService.resolvePath(file2);
+      
+      // Check if files exist
+      if (!await this.fileExists(fullPath1)) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `File does not exist: ${file1}` }]
+        };
+      }
+      
+      if (!await this.fileExists(fullPath2)) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `File does not exist: ${file2}` }]
+        };
+      }
+      
+      // Build diff command
+      const diffArgs = ['diff'];
+      
+      switch (format) {
+        case 'unified':
+          if (contextLines !== 3) {
+            diffArgs.push(`-U${contextLines}`);
+          } else {
+            diffArgs.push('-u');
+          }
+          break;
+        case 'side-by-side':
+          diffArgs.push('--side-by-side', '--width=120');
+          break;
+        case 'context':
+          if (contextLines !== 3) {
+            diffArgs.push(`-C${contextLines}`);
+          } else {
+            diffArgs.push('-c');
+          }
+          break;
+        case 'inline':
+          // Default diff format
+          break;
+      }
+      
+      if (ignoreWhitespace) {
+        diffArgs.push('-w');
+      }
+      
+      if (wordDiff) {
+        diffArgs.push('--word-diff');
+      }
+      
+      diffArgs.push(fullPath1, fullPath2);
+      
+      try {
+        const { stdout } = await execAsync(diffArgs.join(' '));
+        
+        let output = '';
+        if (format === 'side-by-side') {
+          output = `Side-by-side comparison:\n\n${stdout || 'Files are identical'}`;
+        } else {
+          output = stdout || 'Files are identical';
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: output
+          }]
+        };
+      } catch (error: any) {
+        // diff command returns exit code 1 when files differ, but that's not an error
+        if (error.code === 1 && error.stdout) {
+          // Exit code 1 means files differ - this is normal, not an error
+          const diffOutput = error.stdout || '';
+          let output = '';
+          if (format === 'side-by-side') {
+            output = `Side-by-side comparison:\n\n${diffOutput}`;
+          } else {
+            output = diffOutput;
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: output
+            }]
+          };
+        } else {
+          // Actual error occurred (exit code != 1 or no stdout)
+          return {
+            isError: true,
+            content: [{
+              type: 'text',
+              text: `File comparison failed: ${error.message || String(error)}`
+            }]
+          };
+        }
+      }
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `File comparison failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Generate a detailed file comparison with statistics
+   */
+  async analyzeFileDifferences(file1: string, file2: string): Promise<ToolResult> {
+    try {
+      const fullPath1 = this.workspaceService.resolvePath(file1);
+      const fullPath2 = this.workspaceService.resolvePath(file2);
+      
+      // Read both files
+      const content1 = await fs.readFile(fullPath1, 'utf-8');
+      const content2 = await fs.readFile(fullPath2, 'utf-8');
+      
+      const lines1 = content1.split('\n');
+      const lines2 = content2.split('\n');
+      
+      const result: FileComparisonResult = {
+        identical: content1 === content2,
+        differences: [],
+        stats: {
+          linesAdded: 0,
+          linesRemoved: 0,
+          linesModified: 0
+        }
+      };
+      
+      // Simple line-by-line comparison
+      const maxLines = Math.max(lines1.length, lines2.length);
+      
+      for (let i = 0; i < maxLines; i++) {
+        const line1 = lines1[i];
+        const line2 = lines2[i];
+        
+        if (line1 === undefined) {
+          // Line added in file2
+          result.differences.push({
+            line: i + 1,
+            type: 'added',
+            content: line2
+          });
+          result.stats.linesAdded++;
+        } else if (line2 === undefined) {
+          // Line removed from file1
+          result.differences.push({
+            line: i + 1,
+            type: 'removed',
+            content: line1
+          });
+          result.stats.linesRemoved++;
+        } else if (line1 !== line2) {
+          // Line modified
+          result.differences.push({
+            line: i + 1,
+            type: 'modified',
+            content: line2,
+            oldContent: line1
+          });
+          result.stats.linesModified++;
+        }
+      }
+      
+      // Format the output
+      let output = `File Comparison Analysis:\n`;
+      output += `File 1: ${file1}\n`;
+      output += `File 2: ${file2}\n`;
+      output += `Identical: ${result.identical}\n\n`;
+      
+      if (!result.identical) {
+        output += `Statistics:\n`;
+        output += `- Lines added: ${result.stats.linesAdded}\n`;
+        output += `- Lines removed: ${result.stats.linesRemoved}\n`;
+        output += `- Lines modified: ${result.stats.linesModified}\n`;
+        output += `- Total differences: ${result.differences.length}\n\n`;
+        
+        if (result.differences.length <= 50) {
+          output += `Differences:\n`;
+          for (const diff of result.differences) {
+            switch (diff.type) {
+              case 'added':
+                output += `+ Line ${diff.line}: ${diff.content}\n`;
+                break;
+              case 'removed':
+                output += `- Line ${diff.line}: ${diff.content}\n`;
+                break;
+              case 'modified':
+                output += `~ Line ${diff.line}:\n`;
+                output += `  - ${diff.oldContent}\n`;
+                output += `  + ${diff.content}\n`;
+                break;
+            }
+          }
+        } else {
+          output += `Too many differences to display (${result.differences.length}). Use compareFiles for detailed diff.`;
+        }
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: output,
+          _meta: {
+            identical: result.identical,
+            stats: result.stats,
+            differenceCount: result.differences.length
+          }
+        }]
+      };
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `File analysis failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Apply a patch file to the workspace
+   */
+  async applyPatch(patchFile: string, options: PatchOptions = {}): Promise<ToolResult> {
+    try {
+      const { dryRun = false, reverse = false, stripPaths = 0, backup = false } = options;
+      const fullPatchPath = this.workspaceService.resolvePath(patchFile);
+      
+      // Check if patch file exists
+      if (!await this.fileExists(fullPatchPath)) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Patch file does not exist: ${patchFile}` }]
+        };
+      }
+      
+      // Build patch command
+      const patchArgs = ['patch'];
+      
+      if (dryRun) {
+        patchArgs.push('--dry-run');
+      }
+      
+      if (reverse) {
+        patchArgs.push('--reverse');
+      }
+      
+      if (stripPaths > 0) {
+        patchArgs.push(`-p${stripPaths}`);
+      }
+      
+      if (backup) {
+        patchArgs.push('--backup');
+      }
+      
+      patchArgs.push('<', fullPatchPath);
+      
+      const cwd = this.workspaceService.workspacePath;
+      
+      try {
+        const { stdout, stderr } = await execAsync(patchArgs.join(' '), { cwd });
+        
+        return {
+          content: [{
+            type: 'text',
+            text: `Patch applied successfully:\n${stdout}${stderr ? `\nWarnings:\n${stderr}` : ''}`
+          }]
+        };
+      } catch (error: any) {
+        // For dry-run, patch command may exit with non-zero even on success
+        if (dryRun && error.stdout && !error.stderr?.includes('FAILED')) {
+          return {
+            content: [{
+              type: 'text', 
+              text: `Patch applied successfully:\n${error.stdout}${error.stderr ? `\nWarnings:\n${error.stderr}` : ''}`
+            }]
+          };
+        } else {
+          return {
+            isError: true,
+            content: [{
+              type: 'text',
+              text: `Patch application failed: ${error.message}\n${error.stderr || ''}`
+            }]
+          };
+        }
+      }
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Patch application failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Create a patch file from differences between two files or directories
+   */
+  async createPatch(source: string, target: string, outputFile?: string): Promise<ToolResult> {
+    try {
+      const sourcePath = this.workspaceService.resolvePath(source);
+      const targetPath = this.workspaceService.resolvePath(target);
+      
+      // Check if source exists
+      if (!await this.fileExists(sourcePath)) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Source does not exist: ${source}` }]
+        };
+      }
+      
+      // Check if target exists
+      if (!await this.fileExists(targetPath)) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Target does not exist: ${target}` }]
+        };
+      }
+      
+      // Generate unified diff
+      const diffArgs = ['diff', '-u', sourcePath, targetPath];
+      
+      try {
+        const { stdout } = await execAsync(diffArgs.join(' '));
+        const patchContent = stdout;
+        
+        if (outputFile) {
+          const outputPath = this.workspaceService.resolvePath(outputFile);
+          await fs.writeFile(outputPath, patchContent);
+          
+          return {
+            content: [{
+              type: 'text',
+              text: `Patch created successfully: ${outputFile}`
+            }]
+          };
+        } else {
+          return {
+            content: [{
+              type: 'text',
+              text: patchContent || 'No differences found'
+            }]
+          };
+        }
+        
+      } catch (error: any) {
+        // diff returns non-zero when files differ
+        if (error.stdout) {
+          const patchContent = error.stdout;
+          
+          if (outputFile) {
+            const outputPath = this.workspaceService.resolvePath(outputFile);
+            await fs.writeFile(outputPath, patchContent);
+            
+            return {
+              content: [{
+                type: 'text',
+                text: `Patch created successfully: ${outputFile}`
+              }]
+            };
+          } else {
+            return {
+              content: [{
+                type: 'text',
+                text: patchContent
+              }]
+            };
+          }
+        } else {
+          throw error;
+        }
+      }
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Patch creation failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Find and replace text across multiple files with preview option
+   */
+  async findAndReplace(
+    searchPattern: string, 
+    replacement: string, 
+    options: {
+      files?: string[];
+      filePattern?: string;
+      regex?: boolean;
+      caseSensitive?: boolean;
+      wholeWord?: boolean;
+      preview?: boolean;
+      backup?: boolean;
+    } = {}
+  ): Promise<ToolResult> {
+    try {
+      const {
+        files,
+        filePattern = '**/*',
+        regex = false,
+        caseSensitive = true,
+        wholeWord = false,
+        preview = false,
+        backup = false
+      } = options;
+      
+      let filesToProcess: string[] = [];
+      
+      if (files && files.length > 0) {
+        filesToProcess = files;
+      } else {
+        // Find files matching pattern (simple implementation)
+        const workspaceDir = this.workspaceService.getCurrentWorkspace();
+        filesToProcess = await this._findMatchingFiles(workspaceDir, filePattern);
+      }
+      
+      const results: Array<{
+        file: string;
+        matches: Array<{
+          line: number;
+          content: string;
+          newContent: string;
+        }>;
+        error?: string;
+      }> = [];
+      
+      for (const file of filesToProcess) {
+        try {
+          const fullPath = this.workspaceService.resolvePath(file);
+          
+          // Skip if file doesn't exist or is not a file
+          const stats = await this.getFileStats(fullPath);
+          if (!stats.isFile) continue;
+          
+          const content = await fs.readFile(fullPath, 'utf-8');
+          const lines = content.split('\n');
+          
+          const fileResult = {
+            file,
+            matches: [] as Array<{ line: number; content: string; newContent: string; }>
+          };
+          
+          let pattern: RegExp;
+          if (regex) {
+            const flags = caseSensitive ? 'g' : 'gi';
+            pattern = new RegExp(searchPattern, flags);
+          } else {
+            let escapedPattern = searchPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            if (wholeWord) {
+              escapedPattern = `\\b${escapedPattern}\\b`;
+            }
+            const flags = caseSensitive ? 'g' : 'gi';
+            pattern = new RegExp(escapedPattern, flags);
+          }
+          
+          let hasChanges = false;
+          const newLines: string[] = [];
+          
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (pattern.test(line)) {
+              const newLine = line.replace(pattern, replacement);
+              newLines.push(newLine);
+              fileResult.matches.push({
+                line: i + 1,
+                content: line,
+                newContent: newLine
+              });
+              hasChanges = true;
+            } else {
+              newLines.push(line);
+            }
+          }
+          
+          if (hasChanges) {
+            if (!preview) {
+              // Create backup if requested
+              if (backup) {
+                await fs.copyFile(fullPath, `${fullPath}.backup`);
+              }
+              
+              // Write the modified content
+              await fs.writeFile(fullPath, newLines.join('\n'));
+            }
+            
+            results.push(fileResult);
+          }
+          
+        } catch (error) {
+          results.push({
+            file,
+            matches: [],
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+      
+      // Format output
+      let output = preview ? 'Find and Replace Preview:\n\n' : 'Find and Replace Results:\n\n';
+      
+      if (results.length === 0) {
+        output += 'No matches found.';
+      } else {
+        for (const result of results) {
+          if (result.error) {
+            output += `❌ ${result.file}: ${result.error}\n`;
+          } else if (result.matches.length > 0) {
+            output += `📄 ${result.file} (${result.matches.length} matches):\n`;
+            for (const match of result.matches) {
+              output += `  Line ${match.line}:\n`;
+              output += `    - ${match.content}\n`;
+              output += `    + ${match.newContent}\n`;
+            }
+            output += '\n';
+          }
+        }
+        
+        const totalMatches = results.reduce((sum, r) => sum + r.matches.length, 0);
+        const fileCount = results.filter(r => r.matches.length > 0).length;
+        
+        output += `\nSummary: ${totalMatches} matches in ${fileCount} files`;
+        if (preview) {
+          output += ' (preview mode - no changes made)';
+        }
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: output,
+          _meta: {
+            totalMatches: results.reduce((sum, r) => sum + r.matches.length, 0),
+            fileCount: results.filter(r => r.matches.length > 0).length,
+            preview,
+            results: results.slice(0, 10) // Limit metadata to prevent huge responses
+          }
+        }]
+      };
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Find and replace failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Helper method to find files matching a simple pattern
+   */
+  private async _findMatchingFiles(directory: string, pattern: string): Promise<string[]> {
+    const files: string[] = [];
+    
+    const scanDirectory = async (dir: string, relativePath: string = ''): Promise<void> => {
+      try {
+        const entries = await fs.readdir(dir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          // Skip common directories we don't want to search
+          if (entry.isDirectory() && ['node_modules', '.git', '.vscode', 'dist', 'build'].includes(entry.name)) {
+            continue;
+          }
+          
+          const fullPath = path.join(dir, entry.name);
+          const relativeFilePath = path.join(relativePath, entry.name).replace(/\\/g, '/');
+          
+          if (entry.isDirectory()) {
+            await scanDirectory(fullPath, relativeFilePath);
+          } else {
+            // Simple pattern matching - support *.ext and **/* patterns
+            if (this._matchesPattern(relativeFilePath, pattern)) {
+              files.push(relativeFilePath);
+            }
+          }
+        }
+      } catch (error) {
+        // Skip directories we can't read
+      }
+    };
+    
+    await scanDirectory(directory);
+    return files;
+  }
+
+  /**
+   * Simple pattern matching helper
+   */
+  private _matchesPattern(filePath: string, pattern: string): boolean {
+    if (pattern === '**/*') return true;
+    
+    // Convert glob pattern to regex
+    const regexPattern = pattern
+      .replace(/\*\*/g, '.*')
+      .replace(/\*/g, '[^/]*')
+      .replace(/\?/g, '[^/]');
+    
+    const regex = new RegExp(`^${regexPattern}$`);
+    return regex.test(filePath);
   }
 }

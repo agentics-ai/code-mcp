@@ -932,4 +932,767 @@ describe('GitService', () => {
       expectValidMcpResponse(result);
     });
   });
+
+  describe('Auto-commit functionality', () => {
+    beforeEach(async () => {
+      // Initialize git repo for auto-commit tests
+      await execAsync('git init', { cwd: tempWorkspace });
+      await execAsync('git config user.email "test@example.com"', { cwd: tempWorkspace });
+      await execAsync('git config user.name "Test User"', { cwd: tempWorkspace });
+    });
+
+    describe('autoCommitChanges', () => {
+      test('should auto-commit changes with specified message', async () => {
+        // Create test file
+        const testFile = 'auto-commit-test.txt';
+        await fs.writeFile(path.join(tempWorkspace, testFile), 'Auto commit test content');
+        
+        const result = await gitService.autoCommitChanges({
+          message: 'Test auto commit',
+          files: [testFile]
+        });
+        
+        expectValidMcpResponse(result);
+        expect(result.content[0].text).toContain('[AI] Test auto commit');
+      });
+
+      test('should handle no changes scenario', async () => {
+        const result = await gitService.autoCommitChanges({
+          message: 'No changes test',
+          skipIfNoChanges: true
+        });
+        
+        expectValidMcpResponse(result);
+        expect(result.content[0].text).toBe('No changes to commit');
+      });
+
+      test('should auto-commit all changes when no specific files provided', async () => {
+        // Create multiple test files
+        await fs.writeFile(path.join(tempWorkspace, 'file1.txt'), 'Content 1');
+        await fs.writeFile(path.join(tempWorkspace, 'file2.txt'), 'Content 2');
+        
+        const result = await gitService.autoCommitChanges({
+          message: 'Auto commit all files'
+        });
+        
+        expectValidMcpResponse(result);
+        expect(result.content[0].text).toContain('[AI] Auto commit all files');
+      });
+
+      test('should handle auto-commit errors gracefully', async () => {
+        // Try to commit without any git repo (should fail)
+        const nonGitWorkspace = await TestUtils.createTempWorkspace('non-git-workspace');
+        
+        try {
+          // Create a new GitService instance that uses the non-git workspace
+          const nonGitWorkspaceService = TestUtils.createMockWorkspaceService(nonGitWorkspace);
+          const nonGitGitService = new GitService(nonGitWorkspaceService);
+          
+          const result = await nonGitGitService.autoCommitChanges({
+            message: 'This should fail'
+          });
+          
+          // Should handle error gracefully
+          expect(result.isError).toBeTruthy();
+          expect(result.content[0].text).toContain('Auto-commit failed');
+        } finally {
+          await TestUtils.cleanupTempWorkspace(nonGitWorkspace);
+        }
+      });
+    });
+
+    describe('previewChanges', () => {
+      test('should preview unstaged changes', async () => {
+        // Create and modify files
+        const testFile = 'preview-test.txt';
+        await fs.writeFile(path.join(tempWorkspace, testFile), 'Original content');
+        
+        // Add to git
+        await execAsync(`git add ${testFile}`, { cwd: tempWorkspace });
+        await execAsync('git commit -m "Initial commit"', { cwd: tempWorkspace });
+        
+        // Modify file
+        await fs.writeFile(path.join(tempWorkspace, testFile), 'Modified content');
+        
+        const result = await gitService.previewChanges(tempWorkspace);
+        
+        expectValidMcpResponse(result);
+        expect(result.content[0].text).toContain('UNSTAGED CHANGES');
+      });
+
+      test('should preview staged changes', async () => {
+        // Create file and stage it
+        const testFile = 'staged-preview-test.txt';
+        await fs.writeFile(path.join(tempWorkspace, testFile), 'Staged content');
+        await execAsync(`git add ${testFile}`, { cwd: tempWorkspace });
+        
+        const result = await gitService.previewChanges(tempWorkspace);
+        
+        expectValidMcpResponse(result);
+        expect(result.content[0].text).toContain('STAGED CHANGES');
+      });
+
+      test('should handle no changes to preview', async () => {
+        // Commit everything first
+        await fs.writeFile(path.join(tempWorkspace, 'clean-test.txt'), 'Clean content');
+        await execAsync('git add .', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Clean commit"', { cwd: tempWorkspace });
+        
+        const result = await gitService.previewChanges(tempWorkspace);
+        
+        expectValidMcpResponse(result);
+        expect(result.content[0].text).toBe('No changes to preview');
+      });
+
+      test('should handle preview errors gracefully', async () => {
+        const result = await gitService.previewChanges('/non-existent-directory');
+        
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('Failed to preview changes');
+      });
+    });
+  });
+
+  describe('Focused Git Tools - Token Efficiency', () => {
+    describe('focused Git branch tools', () => {
+      describe('gitBranchList', () => {
+        test('should call gitCommand with branch list arguments', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: '* main\n  feature\n  develop' }]
+            });
+
+          const result = await gitService.gitBranchList({
+            all: true,
+            cwd: '/test/repo'
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['branch', '-a'], '/test/repo');
+          expect(result.content[0].text).toContain('main');
+          expect(result.content[0].text).toContain('feature');
+        });
+
+        test('should list remote branches only', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'origin/main\norigin/develop' }]
+            });
+
+          const result = await gitService.gitBranchList({
+            remote: true
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['branch', '-r'], undefined);
+          expect(result.content[0].text).toContain('origin/main');
+        });
+
+        test('should list merged branches', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: '* main\n  old-feature' }]
+            });
+
+          const result = await gitService.gitBranchList({
+            merged: true
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['branch', '--merged'], undefined);
+          expect(result.content[0].text).toContain('main');
+        });
+      });
+
+      describe('gitBranchCreate', () => {
+        test('should create branch without checkout', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Branch created successfully' }]
+            });
+
+          const result = await gitService.gitBranchCreate({
+            name: 'feature-branch',
+            checkout: false
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['branch', 'feature-branch'], undefined);
+          expect(result.content[0].text).toContain('Branch created successfully');
+        });
+
+        test('should create and checkout branch', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Switched to a new branch' }]
+            });
+
+          const result = await gitService.gitBranchCreate({
+            name: 'feature-branch',
+            checkout: true,
+            start_point: 'develop'
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['checkout', '-b', 'feature-branch', 'develop'], undefined);
+          expect(result.content[0].text).toContain('Switched to a new branch');
+        });
+
+        test('should require branch name', async () => {
+          await expect(gitService.gitBranchCreate({} as any)).rejects.toThrow('Missing required parameters: name');
+        });
+      });
+
+      describe('gitBranchSwitch', () => {
+        test('should switch to existing branch', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Switched to branch develop' }]
+            });
+
+          const result = await gitService.gitBranchSwitch({
+            name: 'develop'
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['checkout', 'develop'], undefined);
+          expect(result.content[0].text).toContain('Switched to branch develop');
+        });
+
+        test('should create and switch to new branch', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Switched to a new branch' }]
+            });
+
+          const result = await gitService.gitBranchSwitch({
+            name: 'new-feature',
+            create: true,
+            force: true
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['checkout', '-b', '-f', 'new-feature'], undefined);
+          expect(result.content[0].text).toContain('Switched to a new branch');
+        });
+
+        test('should require branch name', async () => {
+          await expect(gitService.gitBranchSwitch({} as any)).rejects.toThrow('Missing required parameters: name');
+        });
+      });
+
+      describe('gitBranchDelete', () => {
+        test('should delete local branch', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Deleted branch feature-branch' }]
+            });
+
+          const result = await gitService.gitBranchDelete({
+            name: 'feature-branch'
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['branch', '-d', 'feature-branch'], undefined);
+          expect(result.content[0].text).toContain('Deleted branch feature-branch');
+        });
+
+        test('should force delete local branch', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Deleted branch (was 1234567)' }]
+            });
+
+          const result = await gitService.gitBranchDelete({
+            name: 'feature-branch',
+            force: true
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['branch', '-D', 'feature-branch'], undefined);
+          expect(result.content[0].text).toContain('Deleted branch');
+        });
+
+        test('should delete remote branch', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'To origin\n - [deleted]  feature-branch' }]
+            });
+
+          const result = await gitService.gitBranchDelete({
+            name: 'feature-branch',
+            remote: true
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['push', 'origin', '--delete', 'feature-branch'], undefined);
+          expect(result.content[0].text).toContain('deleted');
+        });
+
+        test('should require branch name', async () => {
+          await expect(gitService.gitBranchDelete({} as any)).rejects.toThrow('Missing required parameters: name');
+        });
+      });
+
+      describe('gitBranchMerge', () => {
+        test('should merge branch with default settings', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Merge made by the \'recursive\' strategy' }]
+            });
+
+          const result = await gitService.gitBranchMerge({
+            branch: 'feature-branch'
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith(['merge', 'feature-branch'], undefined);
+          expect(result.content[0].text).toContain('Merge made');
+        });
+
+        test('should merge with no fast-forward', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Merge commit created' }]
+            });
+
+          const result = await gitService.gitBranchMerge({
+            branch: 'feature-branch',
+            no_fast_forward: true,
+            message: 'Custom merge message'
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith([
+            'merge', 
+            '--no-ff', 
+            '-m', 
+            'Custom merge message',
+            'feature-branch'
+          ], undefined);
+          expect(result.content[0].text).toContain('Merge commit created');
+        });
+
+        test('should squash merge', async () => {
+          const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Squash commit created' }]
+            });
+
+          const result = await gitService.gitBranchMerge({
+            branch: 'feature-branch',
+            squash: true
+          });
+
+          expect(gitCommandSpy).toHaveBeenCalledWith([
+            'merge', 
+            '--squash',
+            'feature-branch'
+          ], undefined);
+          expect(result.content[0].text).toContain('Squash commit created');
+        });
+
+        test('should require branch name', async () => {
+          await expect(gitService.gitBranchMerge({} as any)).rejects.toThrow('Missing required parameters: branch');
+        });
+      });
+    });
+
+    describe('error propagation', () => {
+      test('should propagate errors from gitCommand', async () => {
+        jest.spyOn(gitService, 'gitCommand')
+          .mockResolvedValue({
+            isError: true,
+            content: [{ type: 'text', text: 'fatal: not a git repository' }]
+          });
+
+        const result = await gitService.gitBranchList({});
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('fatal: not a git repository');
+      });
+    });
+
+    describe('working directory parameter', () => {
+      test('should pass cwd parameter to gitCommand', async () => {
+        const gitCommandSpy = jest.spyOn(gitService, 'gitCommand')
+          .mockResolvedValue({
+            content: [{ type: 'text', text: 'Success' }]
+          });
+
+        await gitService.gitBranchList({ cwd: '/custom/path' });
+
+        expect(gitCommandSpy).toHaveBeenCalledWith(['branch'], '/custom/path');
+      });
+    });
+  });
+
+  describe('Enhanced Git Diff Management', () => {
+    beforeEach(async () => {
+      // Initialize git repo and create test files
+      await execAsync('git init', { cwd: tempWorkspace });
+      await execAsync('git config user.name "Test User"', { cwd: tempWorkspace });
+      await execAsync('git config user.email "test@example.com"', { cwd: tempWorkspace });
+      
+      // Create initial file and commit
+      await fs.writeFile(path.join(tempWorkspace, 'test.txt'), 'Line 1\nLine 2\nLine 3\n');
+      await execAsync('git add test.txt', { cwd: tempWorkspace });
+      await execAsync('git commit -m "Initial commit"', { cwd: tempWorkspace });
+      
+      // Modify file for testing diffs
+      await fs.writeFile(path.join(tempWorkspace, 'test.txt'), 'Line 1 modified\nLine 2\nLine 3\nLine 4 added\n');
+    });
+
+    describe('enhancedGitDiff', () => {
+      test('should show unified diff format', async () => {
+        const result = await gitService.enhancedGitDiff({
+          format: 'unified',
+          contextLines: 2
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Enhanced Git Diff');
+        expect(result.content[0].text).toContain('test.txt');
+        expect(result.content[0].text).toContain('-Line 1');
+        expect(result.content[0].text).toContain('+Line 1 modified');
+        expect(result.content[0].text).toContain('+Line 4 added');
+      });
+
+      test('should show side-by-side diff format', async () => {
+        const result = await gitService.enhancedGitDiff({
+          format: 'side-by-side',
+          contextLines: 1
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Side-by-side comparison');
+        expect(result.content[0].text).toContain('OLD');
+        expect(result.content[0].text).toContain('NEW');
+        expect(result.content[0].text).toContain('Line 1');
+        expect(result.content[0].text).toContain('Line 1 modified');
+      });
+
+      test('should show stat format', async () => {
+        const result = await gitService.enhancedGitDiff({
+          format: 'stat'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Diff Statistics');
+        expect(result.content[0].text).toContain('test.txt');
+        expect(result.content[0].text).toContain('1 file changed');
+      });
+
+      test('should show name-only format', async () => {
+        const result = await gitService.enhancedGitDiff({
+          format: 'name-only'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Changed Files');
+        expect(result.content[0].text).toContain('test.txt');
+      });
+
+      test('should show word-diff format', async () => {
+        const result = await gitService.enhancedGitDiff({
+          format: 'word-diff'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Word Diff');
+        expect(result.content[0].text).toContain('test.txt');
+      });
+
+      test('should handle staged changes', async () => {
+        // Stage the changes
+        await execAsync('git add test.txt', { cwd: tempWorkspace });
+        
+        const result = await gitService.enhancedGitDiff({
+          staged: true,
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Staged Changes');
+        expect(result.content[0].text).toContain('+Line 1 modified');
+      });
+
+      test('should handle specific file diff', async () => {
+        const result = await gitService.enhancedGitDiff({
+          file: 'test.txt',
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('test.txt');
+        expect(result.content[0].text).toContain('-Line 1');
+        expect(result.content[0].text).toContain('+Line 1 modified');
+      });
+
+      test('should ignore whitespace when requested', async () => {
+        // Create file with only whitespace changes
+        await fs.writeFile(path.join(tempWorkspace, 'whitespace.txt'), 'Line 1\n  Line 2\nLine 3');
+        await execAsync('git add whitespace.txt', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Add whitespace file"', { cwd: tempWorkspace });
+        await fs.writeFile(path.join(tempWorkspace, 'whitespace.txt'), 'Line 1\nLine 2\nLine 3');
+
+        const result = await gitService.enhancedGitDiff({
+          file: 'whitespace.txt',
+          ignoreWhitespace: true,
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+      });
+
+      test('should handle commit comparison', async () => {
+        // Make another commit
+        await fs.writeFile(path.join(tempWorkspace, 'test.txt'), 'Line 1 modified again\nLine 2\nLine 3\nLine 4 added\n');
+        await execAsync('git add test.txt', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Second commit"', { cwd: tempWorkspace });
+
+        const result = await gitService.enhancedGitDiff({
+          commit1: 'HEAD~1',
+          commit2: 'HEAD',
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Commit Comparison');
+        expect(result.content[0].text).toContain('HEAD~1..HEAD');
+      });
+
+      test('should handle no changes', async () => {
+        // Commit all changes
+        await execAsync('git add .', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Commit changes"', { cwd: tempWorkspace });
+
+        const result = await gitService.enhancedGitDiff({
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('No changes');
+      });
+    });
+
+    describe('getDiffStats', () => {
+      test('should get diff statistics', async () => {
+        const result = await gitService.getDiffStats({});
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Diff Statistics');
+        expect(result.content[0].text).toContain('Files changed:');
+        expect(result.content[0].text).toContain('Lines added:');
+        expect(result.content[0].text).toContain('Lines removed:');
+      });
+
+      test('should get stats for staged changes', async () => {
+        await execAsync('git add test.txt', { cwd: tempWorkspace });
+        
+        const result = await gitService.getDiffStats({
+          staged: true
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Staged Changes Statistics');
+      });
+
+      test('should get stats for specific file', async () => {
+        const result = await gitService.getDiffStats({
+          file: 'test.txt'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('test.txt');
+      });
+
+      test('should get stats for commit comparison', async () => {
+        await execAsync('git add test.txt', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Second commit"', { cwd: tempWorkspace });
+
+        const result = await gitService.getDiffStats({
+          commit1: 'HEAD~1',
+          commit2: 'HEAD'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Commit Comparison Statistics');
+        expect(result.content[0].text).toContain('HEAD~1..HEAD');
+      });
+    });
+
+    describe('compareCommits', () => {
+      beforeEach(async () => {
+        // Create multiple commits for comparison
+        await execAsync('git add test.txt', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Second commit"', { cwd: tempWorkspace });
+        
+        await fs.writeFile(path.join(tempWorkspace, 'another.txt'), 'Another file content\n');
+        await execAsync('git add another.txt', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Third commit"', { cwd: tempWorkspace });
+      });
+
+      test('should compare two commits', async () => {
+        const result = await gitService.compareCommits('HEAD~2', 'HEAD');
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Commit Comparison');
+        expect(result.content[0].text).toContain('HEAD~2..HEAD');
+        expect(result.content[0].text).toContain('Summary');
+        expect(result.content[0].text).toContain('Files changed:');
+      });
+
+      test('should compare commits with specific format', async () => {
+        const result = await gitService.compareCommits('HEAD~1', 'HEAD', {
+          format: 'stat'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Statistics Format');
+      });
+
+      test('should compare commits with file pattern', async () => {
+        const result = await gitService.compareCommits('HEAD~1', 'HEAD', {
+          filePattern: '*.txt'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('File Pattern: *.txt');
+      });
+
+      test('should handle invalid commit references', async () => {
+        const result = await gitService.compareCommits('invalid-commit', 'HEAD');
+
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('Failed to compare commits');
+      });
+    });
+
+    describe('previewChangesEnhanced', () => {
+      test('should preview changes in unified format', async () => {
+        const result = await gitService.previewChangesEnhanced({
+          format: 'unified',
+          contextLines: 2
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Enhanced Change Preview');
+        expect(result.content[0].text).toContain('Unstaged Changes');
+        expect(result.content[0].text).toContain('test.txt');
+      });
+
+      test('should preview changes in side-by-side format', async () => {
+        const result = await gitService.previewChangesEnhanced({
+          format: 'side-by-side'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Side-by-side comparison');
+      });
+
+      test('should preview changes with file pattern', async () => {
+        await fs.writeFile(path.join(tempWorkspace, 'test.js'), 'console.log("test");\n');
+        
+        const result = await gitService.previewChangesEnhanced({
+          filePattern: '*.txt',
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('File Pattern: *.txt');
+        expect(result.content[0].text).toContain('test.txt');
+        expect(result.content[0].text).not.toContain('test.js');
+      });
+
+      test('should preview with whitespace ignored', async () => {
+        const result = await gitService.previewChangesEnhanced({
+          ignoreWhitespace: true,
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Ignoring whitespace changes');
+      });
+
+      test('should handle no changes', async () => {
+        // Commit all changes
+        await execAsync('git add .', { cwd: tempWorkspace });
+        await execAsync('git commit -m "Commit all changes"', { cwd: tempWorkspace });
+
+        const result = await gitService.previewChangesEnhanced({
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('No changes to preview');
+      });
+
+      test('should preview both staged and unstaged changes', async () => {
+        // Stage some changes
+        await execAsync('git add test.txt', { cwd: tempWorkspace });
+        
+        // Make more unstaged changes
+        await fs.writeFile(path.join(tempWorkspace, 'test.txt'), 'Line 1 modified again\nLine 2\nLine 3\nLine 4 added\nLine 5 unstaged\n');
+
+        const result = await gitService.previewChangesEnhanced({
+          format: 'stat'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Staged Changes');
+        expect(result.content[0].text).toContain('Unstaged Changes');
+      });
+    });
+
+    describe('Error Handling', () => {
+      test('should handle git command failures gracefully', async () => {
+        // Test with non-git directory
+        const nonGitWorkspace = await TestUtils.createTempWorkspace('non-git');
+        const mockNonGitService = TestUtils.createMockWorkspaceService(nonGitWorkspace);
+        const nonGitService = new GitService(mockNonGitService);
+
+        const result = await nonGitService.enhancedGitDiff({
+          format: 'unified'
+        });
+
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('Git diff failed');
+
+        await TestUtils.cleanupTempWorkspace(nonGitWorkspace);
+      });
+
+      test('should handle invalid file paths', async () => {
+        const result = await gitService.enhancedGitDiff({
+          file: 'nonexistent-file.txt',
+          format: 'unified'
+        });
+
+        expectValidMcpResponse(result);
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('No changes');
+      });
+
+      test('should handle invalid format options', async () => {
+        const result = await gitService.enhancedGitDiff({
+          format: 'invalid-format' as any
+        });
+
+        expectValidMcpResponse(result);
+        // Should default to unified format
+        expect(result.content[0].text).toContain('Enhanced Git Diff');
+      });
+    });
+  });
 });

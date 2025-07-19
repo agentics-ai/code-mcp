@@ -1,0 +1,33 @@
+allowedCommands = [
+  "npm",
+  "yarn",
+  "pnpm",
+  "bun",
+  "git",
+  "docker",
+  "docker-compose",
+  "prettier",
+  "eslint",
+  "tsc",
+  "tslint",
+  "pytest",
+  "jest",
+  "vitest",
+  "mocha",
+  "cargo",
+  "rustfmt",
+  "clippy",
+  "go",
+  "gofmt",
+  "golint"
+]
+formatOnSave = true
+gitAutoCommit = true
+gitAutoCommitMessage = "[AI] Auto-commit: {{message}}"
+sessionTracking = true
+maxSessionCommits = 50
+
+[remoteServer]
+enabled = true
+host = "127.0.0.1"
+port = 3_000

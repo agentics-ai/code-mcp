@@ -625,4 +625,305 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {},
     },
   },
-] as const;
+  
+  // Enhanced MCP Features - codemcp-inspired improvements
+  
+  // Project Configuration Management
+  {
+    name: 'load_project_config',
+    description: 'Load project-specific configuration from .vscode-mcp.toml',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Path to workspace directory (defaults to current)' }
+      }
+    }
+  },
+  {
+    name: 'save_project_config',
+    description: 'Save project-specific configuration to .vscode-mcp.toml',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        config: { type: 'object', description: 'Project configuration object' },
+        path: { type: 'string', description: 'Path to workspace directory (defaults to current)' }
+      },
+      required: ['config']
+    }
+  },
+  {
+    name: 'update_project_config',
+    description: 'Update specific project configuration settings',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        allowedCommands: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Commands that are allowed to run'
+        },
+        formatOnSave: {
+          type: 'boolean',
+          description: 'Auto-format files after editing'
+        },
+        gitAutoCommit: {
+          type: 'boolean',
+          description: 'Auto-commit AI changes'
+        },
+        formatCommand: {
+          type: 'string',
+          description: 'Format command (use {{file}} as placeholder)'
+        },
+        projectInstructions: {
+          type: 'string',
+          description: 'Project-specific instructions for AI'
+        }
+      }
+    }
+  },
+  {
+    name: 'generate_sample_config',
+    description: 'Generate a sample .vscode-mcp.toml configuration file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        saveToFile: { type: 'boolean', description: 'Save generated config to .vscode-mcp.toml' }
+      }
+    }
+  },
+
+  // Session Management
+  {
+    name: 'start_coding_session',
+    description: 'Start a new AI coding session with automatic change tracking',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        description: { type: 'string', description: 'What this session will accomplish' },
+        branch: { type: 'string', description: 'Git branch to work on (optional)' }
+      },
+      required: ['description']
+    }
+  },
+  {
+    name: 'end_coding_session',
+    description: 'End the current AI coding session',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
+    name: 'get_session_info',
+    description: 'Get information about the current coding session',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
+    name: 'rollback_session',
+    description: 'Rollback all changes made in the current AI session',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        confirm: { type: 'boolean', description: 'Confirm rollback (required)' },
+        preserveUnstaged: { type: 'boolean', description: 'Keep unstaged changes' }
+      },
+      required: ['confirm']
+    }
+  },
+
+  // Enhanced Git Operations
+  {
+    name: 'preview_changes',
+    description: 'Preview all changes before committing',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
+    name: 'auto_commit_changes',
+    description: 'Automatically commit AI-made changes with tracking',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', description: 'Commit message' },
+        files: { type: 'array', items: { type: 'string' }, description: 'Specific files to commit' },
+        amendSession: { type: 'boolean', description: 'Amend to current session commit' }
+      },
+      required: ['message']
+    }
+  },
+  {
+    name: 'get_session_history',
+    description: 'Get history of commits in current session',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
+  },
+
+  // Enhanced Diff Management
+  {
+    name: 'enhanced_git_diff',
+    description: 'Show git diff with multiple format options (unified, side-by-side, stat, word-diff)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        staged: { type: 'boolean', description: 'Show staged changes' },
+        file: { type: 'string', description: 'Specific file to diff' },
+        format: { 
+          type: 'string', 
+          enum: ['unified', 'side-by-side', 'inline', 'stat', 'name-only', 'word-diff'],
+          description: 'Diff format' 
+        },
+        contextLines: { type: 'number', description: 'Number of context lines (default: 3)' },
+        ignoreWhitespace: { type: 'boolean', description: 'Ignore whitespace changes' },
+        colorOutput: { type: 'boolean', description: 'Enable color output' },
+        commit1: { type: 'string', description: 'First commit for comparison' },
+        commit2: { type: 'string', description: 'Second commit for comparison' },
+        cwd: { type: 'string', description: 'Working directory' }
+      }
+    }
+  },
+  {
+    name: 'get_diff_stats',
+    description: 'Get diff statistics (files changed, lines added/removed)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        staged: { type: 'boolean', description: 'Show stats for staged changes' },
+        file: { type: 'string', description: 'Specific file stats' },
+        commit1: { type: 'string', description: 'First commit for comparison' },
+        commit2: { type: 'string', description: 'Second commit for comparison' },
+        cwd: { type: 'string', description: 'Working directory' }
+      }
+    }
+  },
+  {
+    name: 'compare_commits',
+    description: 'Compare two commits with detailed analysis',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        commit1: { type: 'string', description: 'First commit hash or reference' },
+        commit2: { type: 'string', description: 'Second commit hash or reference' },
+        filePattern: { type: 'string', description: 'File pattern to filter' },
+        format: { 
+          type: 'string', 
+          enum: ['unified', 'stat', 'name-only'],
+          description: 'Output format' 
+        },
+        cwd: { type: 'string', description: 'Working directory' }
+      },
+      required: ['commit1', 'commit2']
+    }
+  },
+  {
+    name: 'preview_changes_enhanced',
+    description: 'Enhanced change preview with multiple format options',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        format: { 
+          type: 'string', 
+          enum: ['unified', 'side-by-side', 'stat', 'word-diff'],
+          description: 'Preview format' 
+        },
+        contextLines: { type: 'number', description: 'Number of context lines' },
+        ignoreWhitespace: { type: 'boolean', description: 'Ignore whitespace changes' },
+        filePattern: { type: 'string', description: 'File pattern filter' },
+        cwd: { type: 'string', description: 'Working directory' }
+      }
+    }
+  },
+
+  // Enhanced File Operations & Diff Management
+  {
+    name: 'compare_files',
+    description: 'Compare two files and show differences with multiple format options',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        file1: { type: 'string', description: 'First file path' },
+        file2: { type: 'string', description: 'Second file path' },
+        format: { 
+          type: 'string', 
+          enum: ['unified', 'side-by-side', 'inline', 'context'],
+          description: 'Diff format' 
+        },
+        contextLines: { type: 'number', description: 'Number of context lines (default: 3)' },
+        ignoreWhitespace: { type: 'boolean', description: 'Ignore whitespace changes' },
+        wordDiff: { type: 'boolean', description: 'Show word-level differences' },
+        label1: { type: 'string', description: 'Label for first file' },
+        label2: { type: 'string', description: 'Label for second file' }
+      },
+      required: ['file1', 'file2']
+    }
+  },
+  {
+    name: 'analyze_file_differences',
+    description: 'Analyze differences between two files with detailed statistics',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        file1: { type: 'string', description: 'First file path' },
+        file2: { type: 'string', description: 'Second file path' }
+      },
+      required: ['file1', 'file2']
+    }
+  },
+  {
+    name: 'apply_patch',
+    description: 'Apply a patch file to the workspace',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        patchFile: { type: 'string', description: 'Path to patch file' },
+        dryRun: { type: 'boolean', description: 'Show what would be done without making changes' },
+        reverse: { type: 'boolean', description: 'Apply patch in reverse' },
+        stripPaths: { type: 'number', description: 'Number of path components to strip' },
+        backup: { type: 'boolean', description: 'Create backup files' }
+      },
+      required: ['patchFile']
+    }
+  },
+  {
+    name: 'create_patch',
+    description: 'Create a patch file from differences between files or directories',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: { type: 'string', description: 'Source file or directory' },
+        target: { type: 'string', description: 'Target file or directory' },
+        outputFile: { type: 'string', description: 'Output patch file (optional, prints to output if not specified)' }
+      },
+      required: ['source', 'target']
+    }
+  },
+  {
+    name: 'find_and_replace',
+    description: 'Find and replace text across multiple files with preview option',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        searchPattern: { type: 'string', description: 'Text or regex pattern to search for' },
+        replacement: { type: 'string', description: 'Replacement text' },
+        files: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Specific files to process' 
+        },
+        filePattern: { type: 'string', description: 'File pattern to match (e.g., "**/*.ts")' },
+        regex: { type: 'boolean', description: 'Treat search pattern as regex' },
+        caseSensitive: { type: 'boolean', description: 'Case sensitive search (default: true)' },
+        wholeWord: { type: 'boolean', description: 'Match whole words only' },
+        preview: { type: 'boolean', description: 'Preview changes without applying them' },
+        backup: { type: 'boolean', description: 'Create backup files before changes' }
+      },
+      required: ['searchPattern', 'replacement']
+    }
+  }
+];

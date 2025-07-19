@@ -51,7 +51,11 @@ import {
 import { ProjectService, CreateProjectArgs } from './services/ProjectService.js';
 import { VSCodeDetectionService, DetectWorkspacesArgs } from './services/VSCodeDetectionService.js';
 
-class VSCodeAgentServer {
+// Enhanced services with codemcp-inspired improvements
+import { ProjectConfigService } from './services/ProjectConfigService.js';
+import { SecureCommandService } from './services/SecureCommandService.js';
+
+export class VSCodeAgentServer {
   private server: Server;
   private workspaceService: WorkspaceService;
   private fileService: FileService;
@@ -62,6 +66,10 @@ class VSCodeAgentServer {
   private analysisService: AnalysisService;
   private projectService: ProjectService;
   private vsCodeDetectionService: VSCodeDetectionService;
+  
+  // Enhanced services
+  private projectConfigService: ProjectConfigService;
+  private secureCommandService: SecureCommandService;
 
   constructor() {
     this.server = new Server(
@@ -86,6 +94,14 @@ class VSCodeAgentServer {
     this.analysisService = new AnalysisService(this.workspaceService, this.fileService);
     this.projectService = new ProjectService(this.workspaceService);
     this.vsCodeDetectionService = new VSCodeDetectionService();
+    
+    // Initialize enhanced services
+    this.projectConfigService = new ProjectConfigService(this.workspaceService);
+    this.secureCommandService = new SecureCommandService(
+      this.projectConfigService,
+      this.gitService,
+      this.workspaceService
+    );
 
     this.setupToolHandlers();
     this.setupErrorHandling();
@@ -229,6 +245,225 @@ class VSCodeAgentServer {
       case 'list_processes':
         return await this.processService.listProcesses();
       
+      // Enhanced MCP Features - codemcp-inspired improvements
+      
+      // Project Configuration Management
+      case 'load_project_config':
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(await this.projectConfigService.loadProjectConfig(args.path), null, 2)
+          }]
+        };
+      case 'save_project_config':
+        return await this.projectConfigService.saveProjectConfig(args.config, args.path);
+      case 'update_project_config':
+        const currentConfig = await this.projectConfigService.loadProjectConfig();
+        const updatedConfig = { ...currentConfig, ...args };
+        return await this.projectConfigService.saveProjectConfig(updatedConfig);
+      case 'generate_sample_config':
+        const sampleConfig = this.projectConfigService.generateSampleConfig();
+        if (args.saveToFile) {
+          await this.fileService.writeFile('.vscode-mcp.toml', sampleConfig);
+          return {
+            content: [{
+              type: 'text',
+              text: 'Sample configuration saved to .vscode-mcp.toml'
+            }]
+          };
+        }
+        return {
+          content: [{
+            type: 'text',
+            text: sampleConfig
+          }]
+        };
+
+      // Session Management
+      case 'start_coding_session':
+        const session = await this.projectConfigService.startCodingSession(args.description, args.branch);
+        return {
+          content: [{
+            type: 'text',
+            text: `Started coding session: ${session.description}\nSession ID: ${session.id}`
+          }]
+        };
+      case 'end_coding_session':
+        await this.projectConfigService.endCodingSession();
+        return {
+          content: [{
+            type: 'text',
+            text: 'Coding session ended'
+          }]
+        };
+      case 'get_session_info':
+        const sessionInfo = this.projectConfigService.getCurrentSession();
+        if (!sessionInfo) {
+          return {
+            content: [{
+              type: 'text',
+              text: 'No active coding session'
+            }]
+          };
+        }
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(sessionInfo, null, 2)
+          }]
+        };
+      case 'rollback_session':
+        if (!args.confirm) {
+          return {
+            isError: true,
+            content: [{
+              type: 'text',
+              text: 'Rollback requires confirmation. Set confirm: true to proceed.'
+            }]
+          };
+        }
+        return await this.gitService.rollbackSession({
+          preserveUnstaged: args.preserveUnstaged
+        });
+
+      // Enhanced Git Operations
+      case 'preview_changes':
+        return await this.gitService.previewChanges();
+      case 'auto_commit_changes':
+        return await this.gitService.autoCommitChanges({
+          message: args.message,
+          files: args.files,
+          amendSession: args.amendSession
+        });
+      case 'get_session_history':
+        return await this.gitService.getSessionHistory();
+
+      // Secure Command Execution
+      case 'secure_run_command':
+        return await this.secureCommandService.runCommand(args.command, {
+          cwd: args.cwd,
+          timeout: args.timeout,
+          commitResult: args.commitResult,
+          commitMessage: args.commitMessage
+        });
+      case 'get_allowed_commands':
+        return await this.secureCommandService.getAllowedCommands();
+      case 'add_allowed_command':
+        return await this.secureCommandService.addAllowedCommand(args.command);
+      case 'remove_allowed_command':
+        return await this.secureCommandService.removeAllowedCommand(args.command);
+      case 'run_custom_tool':
+        return await this.secureCommandService.runCustomTool(args.toolName, args.args);
+
+      // Enhanced File Operations
+      case 'enhanced_write_file':
+        return await this.fileService.writeFile(args.path, args.content, {
+          skipAutoFormat: args.skipAutoFormat,
+          skipAutoCommit: args.skipAutoCommit,
+          commitMessage: args.commitMessage,
+          formatCommand: args.formatCommand
+        });
+      case 'enhanced_create_file':
+        return await this.fileService.createFile(args.path, args.content, {
+          skipAutoFormat: args.skipAutoFormat,
+          skipAutoCommit: args.skipAutoCommit,
+          commitMessage: args.commitMessage
+        });
+      case 'format_file':
+        return await this.fileService.formatFile(args.path, args.formatCommand);
+      case 'format_project':
+        return await this.fileService.formatProject();
+
+      // Additional Productivity Tools
+      case 'set_project_context':
+        const config = await this.projectConfigService.loadProjectConfig();
+        config.projectInstructions = args.context;
+        if (args.persist) {
+          await this.projectConfigService.saveProjectConfig(config);
+        }
+        return {
+          content: [{
+            type: 'text',
+            text: args.persist ? 'Project context saved to configuration' : 'Project context set for current session'
+          }]
+        };
+
+
+
+      // Focused Docker Tools - Better Token Efficiency
+      case 'docker_compose_up':
+        return await this.dockerService.dockerComposeUp(args as any);
+      case 'docker_compose_down':
+        return await this.dockerService.dockerComposeDown(args as any);
+      case 'docker_compose_logs':
+        return await this.dockerService.dockerComposeLogs(args as any);
+      case 'docker_compose_restart':
+        return await this.dockerService.dockerComposeRestart(args as any);
+      case 'docker_container_start':
+        return await this.dockerService.dockerContainerStart(args as any);
+      case 'docker_container_stop':
+        return await this.dockerService.dockerContainerStop(args as any);
+      case 'docker_container_restart':
+        return await this.dockerService.dockerContainerRestart(args as any);
+      case 'docker_container_remove':
+        return await this.dockerService.dockerContainerRemove(args as any);
+      case 'docker_container_logs':
+        return await this.dockerService.dockerContainerLogs(args as any);
+      case 'docker_container_exec':
+        return await this.dockerService.dockerContainerExec(args as any);
+      case 'docker_image_pull':
+        return await this.dockerService.dockerImagePull(args as any);
+      case 'docker_image_push':
+        return await this.dockerService.dockerImagePush(args as any);
+      case 'docker_image_remove':
+        return await this.dockerService.dockerImageRemove(args as any);
+      case 'docker_image_build':
+        return await this.dockerService.dockerImageBuild(args as any);
+      case 'docker_image_tag':
+        return await this.dockerService.dockerImageTag(args as any);
+
+      // Focused Git Tools - Better Token Efficiency
+      case 'git_branch_list':
+        return await this.gitService.gitBranchList(args as any);
+      case 'git_branch_create':
+        return await this.gitService.gitBranchCreate(args as any);
+      case 'git_branch_switch':
+        return await this.gitService.gitBranchSwitch(args as any);
+      case 'git_branch_delete':
+        return await this.gitService.gitBranchDelete(args as any);
+      case 'git_branch_merge':
+        return await this.gitService.gitBranchMerge(args as any);
+
+      // Enhanced Git Diff Operations
+      case 'enhanced_git_diff':
+        return await this.gitService.enhancedGitDiff(args);
+      case 'get_diff_stats':
+        return await this.gitService.getDiffStats(args);
+      case 'compare_commits':
+        return await this.gitService.compareCommits(args.commit1, args.commit2, args.options || {});
+      case 'preview_changes_enhanced':
+        return await this.gitService.previewChangesEnhanced(args);
+
+      // Enhanced File Operations
+      case 'compare_files':
+        return await this.fileService.compareFiles(args as any);
+      case 'analyze_file_differences':
+        return await this.fileService.analyzeFileDifferences(args.file1, args.file2);
+      case 'apply_patch':
+        return await this.fileService.applyPatch(args.patchFile, args.options || {});
+      case 'create_patch':
+        return await this.fileService.createPatch(args.source, args.target, args.outputFile);
+      case 'find_and_replace':
+        return await this.fileService.findAndReplace(args.searchPattern, args.replacement, {
+          files: args.files,
+          filePattern: args.filePattern,
+          regex: args.regex,
+          caseSensitive: args.caseSensitive,
+          wholeWord: args.wholeWord,
+          preview: args.preview,
+          backup: args.backup
+        });
+
       default:
         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
     }

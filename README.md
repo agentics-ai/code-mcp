@@ -2,7 +2,7 @@
 
 A comprehensive **Model Context Protocol (MCP) server** that enables AI assistants like Claude to interact seamlessly with VS Code workspaces. This server provides **40+ powerful development tools** for file operations, code execution, Git management, Docker containerization, project scaffolding, and intelligent workspace analysis.
 
-[![Test Status](https://img.shields.io/badge/tests-369%20passing-brightgreen)](#testing)
+[![Test Status](https://img.shields.io/badge/tests-447%20passing-brightgreen)](#testing)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![MCP Protocol](https://img.shields.io/badge/MCP-1.15%2B-purple.svg)](https://modelcontextprotocol.io/)
@@ -23,6 +23,10 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 - **Bulk operations** - Copy, move, and manage multiple files efficiently
 - **File metadata** - Access file stats, permissions, and detailed information
 - **Backup support** - Automatic backups for critical file operations
+- **Multi-format file comparison** - Compare files with unified, side-by-side, inline, and context formats
+- **Advanced diff analysis** - Detailed statistics and difference analysis between files
+- **Patch management** - Apply and create patches with dry-run and backup options
+- **Find & replace** - Advanced text replacement across multiple files with regex support
 
 ### ⚡ **Multi-Language Code Execution**
 - **Python** - Execute scripts with virtual environment and package management
@@ -37,6 +41,10 @@ A comprehensive **Model Context Protocol (MCP) server** that enables AI assistan
 - **Conflict resolution** - Handle merge conflicts and complex scenarios
 - **Repository analysis** - Status checking, diff viewing, and log analysis
 - **Remote management** - Work with multiple remotes and complex topologies
+- **Enhanced diff management** - Multi-format diffs (unified, side-by-side, stat, word-diff, name-only)
+- **Commit comparison** - Detailed analysis and comparison between commits
+- **Diff statistics** - Comprehensive stats on lines added, removed, and modified
+- **Whitespace handling** - Advanced options for ignoring whitespace changes
 
 ### 🐳 **Docker Integration**
 - **Container management** - Build, run, stop, and manage Docker containers

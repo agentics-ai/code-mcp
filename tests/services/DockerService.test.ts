@@ -178,4 +178,387 @@ describe('DockerService', () => {
       await expect(dockerService.dockerCompose({} as any)).rejects.toThrow('action');
     });
   });
+
+  describe('Focused Docker Tools - Token Efficiency', () => {
+    describe('focused Docker Compose tools', () => {
+      describe('dockerComposeUp', () => {
+        it('should call dockerCompose with up action', async () => {
+          const dockerComposeSpy = jest.spyOn(dockerService, 'dockerCompose')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Services started' }]
+            });
+
+          const result = await dockerService.dockerComposeUp({
+            file: 'docker-compose.yml',
+            services: ['web', 'db'],
+            detach: true,
+            build: true
+          });
+
+          expect(dockerComposeSpy).toHaveBeenCalledWith({
+            action: 'up',
+            file: 'docker-compose.yml',
+            service: 'web', // First service
+            detach: true,
+            build: true,
+            project_name: undefined
+          });
+
+          expect(result.content[0].text).toContain('Services started');
+        });
+      });
+
+      describe('dockerComposeDown', () => {
+        it('should call dockerCompose with down action', async () => {
+          const dockerComposeSpy = jest.spyOn(dockerService, 'dockerCompose')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Services stopped' }]
+            });
+
+          const result = await dockerService.dockerComposeDown({
+            file: 'custom-compose.yml',
+            volumes: true,
+            remove_orphans: true
+          });
+
+          expect(dockerComposeSpy).toHaveBeenCalledWith({
+            action: 'down',
+            file: 'custom-compose.yml',
+            remove_volumes: true,
+            remove_orphans: true,
+            project_name: undefined
+          });
+
+          expect(result.content[0].text).toContain('Services stopped');
+        });
+      });
+
+      describe('dockerComposeLogs', () => {
+        it('should call dockerCompose with logs action', async () => {
+          const dockerComposeSpy = jest.spyOn(dockerService, 'dockerCompose')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Container logs' }]
+            });
+
+          const result = await dockerService.dockerComposeLogs({
+            services: ['api'],
+            follow: true,
+            tail: 100
+          });
+
+          expect(dockerComposeSpy).toHaveBeenCalledWith({
+            action: 'logs',
+            file: undefined,
+            service: 'api',
+            follow: true,
+            tail: 100,
+            project_name: undefined
+          });
+
+          expect(result.content[0].text).toContain('Container logs');
+        });
+      });
+
+      describe('dockerComposeRestart', () => {
+        it('should call dockerCompose with restart action', async () => {
+          const dockerComposeSpy = jest.spyOn(dockerService, 'dockerCompose')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Services restarted' }]
+            });
+
+          const result = await dockerService.dockerComposeRestart({
+            services: ['web'],
+            project_name: 'myproject'
+          });
+
+          expect(dockerComposeSpy).toHaveBeenCalledWith({
+            action: 'restart',
+            file: undefined,
+            service: 'web',
+            project_name: 'myproject'
+          });
+
+          expect(result.content[0].text).toContain('Services restarted');
+        });
+      });
+    });
+
+    describe('focused Docker container tools', () => {
+      describe('dockerContainerStart', () => {
+        it('should call manageContainers with start action', async () => {
+          const manageContainersSpy = jest.spyOn(dockerService, 'manageContainers')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Container started' }]
+            });
+
+          const result = await dockerService.dockerContainerStart({
+            container: 'my-container'
+          });
+
+          expect(manageContainersSpy).toHaveBeenCalledWith({
+            action: 'start',
+            container: 'my-container'
+          });
+
+          expect(result.content[0].text).toContain('Container started');
+        });
+      });
+
+      describe('dockerContainerStop', () => {
+        it('should call manageContainers with stop action', async () => {
+          const manageContainersSpy = jest.spyOn(dockerService, 'manageContainers')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Container stopped' }]
+            });
+
+          const result = await dockerService.dockerContainerStop({
+            container: 'my-container',
+            timeout: 30
+          });
+
+          expect(manageContainersSpy).toHaveBeenCalledWith({
+            action: 'stop',
+            container: 'my-container',
+            time: 30
+          });
+
+          expect(result.content[0].text).toContain('Container stopped');
+        });
+      });
+
+      describe('dockerContainerRestart', () => {
+        it('should call manageContainers with restart action', async () => {
+          const manageContainersSpy = jest.spyOn(dockerService, 'manageContainers')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Container restarted' }]
+            });
+
+          const result = await dockerService.dockerContainerRestart({
+            container: 'my-container',
+            timeout: 10
+          });
+
+          expect(manageContainersSpy).toHaveBeenCalledWith({
+            action: 'restart',
+            container: 'my-container',
+            time: 10
+          });
+
+          expect(result.content[0].text).toContain('Container restarted');
+        });
+      });
+
+      describe('dockerContainerRemove', () => {
+        it('should call manageContainers with remove action', async () => {
+          const manageContainersSpy = jest.spyOn(dockerService, 'manageContainers')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Container removed' }]
+            });
+
+          const result = await dockerService.dockerContainerRemove({
+            container: 'my-container',
+            force: true,
+            volumes: true
+          });
+
+          expect(manageContainersSpy).toHaveBeenCalledWith({
+            action: 'remove',
+            container: 'my-container',
+            force: true,
+            volumes: true
+          });
+
+          expect(result.content[0].text).toContain('Container removed');
+        });
+      });
+
+      describe('dockerContainerLogs', () => {
+        it('should call manageContainers with logs action', async () => {
+          const manageContainersSpy = jest.spyOn(dockerService, 'manageContainers')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Container logs output' }]
+            });
+
+          const result = await dockerService.dockerContainerLogs({
+            container: 'my-container',
+            follow: true,
+            tail: 50,
+            since: '1h'
+          });
+
+          expect(manageContainersSpy).toHaveBeenCalledWith({
+            action: 'logs',
+            container: 'my-container',
+            follow: true,
+            tail: 50,
+            since: '1h'
+          });
+
+          expect(result.content[0].text).toContain('Container logs output');
+        });
+      });
+
+      describe('dockerContainerExec', () => {
+        it('should call manageContainers with exec action', async () => {
+          const manageContainersSpy = jest.spyOn(dockerService, 'manageContainers')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Command executed' }]
+            });
+
+          const result = await dockerService.dockerContainerExec({
+            container: 'my-container',
+            command: 'bash -c "ls -la"',
+            interactive: true,
+            tty: true
+          });
+
+          expect(manageContainersSpy).toHaveBeenCalledWith({
+            action: 'exec',
+            container: 'my-container',
+            command: 'bash -c "ls -la"',
+            interactive: true,
+            tty: true
+          });
+
+          expect(result.content[0].text).toContain('Command executed');
+        });
+      });
+    });
+
+    describe('focused Docker image tools', () => {
+      describe('dockerImagePull', () => {
+        it('should call manageImages with pull action', async () => {
+          const manageImagesSpy = jest.spyOn(dockerService, 'manageImages')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Image pulled' }]
+            });
+
+          const result = await dockerService.dockerImagePull({
+            image: 'nginx:latest',
+            all_tags: false
+          });
+
+          expect(manageImagesSpy).toHaveBeenCalledWith({
+            action: 'pull',
+            image: 'nginx:latest',
+            all: false
+          });
+
+          expect(result.content[0].text).toContain('Image pulled');
+        });
+      });
+
+      describe('dockerImagePush', () => {
+        it('should call manageImages with push action', async () => {
+          const manageImagesSpy = jest.spyOn(dockerService, 'manageImages')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Image pushed' }]
+            });
+
+          const result = await dockerService.dockerImagePush({
+            image: 'myapp:v1.0',
+            all_tags: true
+          });
+
+          expect(manageImagesSpy).toHaveBeenCalledWith({
+            action: 'push',
+            image: 'myapp:v1.0',
+            all: true
+          });
+
+          expect(result.content[0].text).toContain('Image pushed');
+        });
+      });
+
+      describe('dockerImageRemove', () => {
+        it('should call manageImages with remove action', async () => {
+          const manageImagesSpy = jest.spyOn(dockerService, 'manageImages')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Image removed' }]
+            });
+
+          const result = await dockerService.dockerImageRemove({
+            image: 'old-image:v1.0',
+            force: true,
+            no_prune: false
+          });
+
+          expect(manageImagesSpy).toHaveBeenCalledWith({
+            action: 'remove',
+            image: 'old-image:v1.0',
+            force: true,
+            no_prune: false
+          });
+
+          expect(result.content[0].text).toContain('Image removed');
+        });
+      });
+
+      describe('dockerImageBuild', () => {
+        it('should call buildImage with build arguments', async () => {
+          const buildImageSpy = jest.spyOn(dockerService, 'buildImage')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Image built successfully' }]
+            });
+
+          const result = await dockerService.dockerImageBuild({
+            context: './app',
+            dockerfile: 'Dockerfile.prod',
+            tag: 'myapp:latest',
+            build_args: { NODE_ENV: 'production' },
+            no_cache: true
+          });
+
+          expect(buildImageSpy).toHaveBeenCalledWith({
+            context: './app',
+            dockerfile: 'Dockerfile.prod',
+            tag: 'myapp:latest',
+            build_args: { NODE_ENV: 'production' },
+            no_cache: true
+          });
+
+          expect(result.content[0].text).toContain('Image built successfully');
+        });
+      });
+
+      describe('dockerImageTag', () => {
+        it('should call manageImages with tag action', async () => {
+          const manageImagesSpy = jest.spyOn(dockerService, 'manageImages')
+            .mockResolvedValue({
+              content: [{ type: 'text', text: 'Image tagged' }]
+            });
+
+          const result = await dockerService.dockerImageTag({
+            source: 'myapp:latest',
+            target: 'myapp:v1.0'
+          });
+
+          expect(manageImagesSpy).toHaveBeenCalledWith({
+            action: 'tag',
+            image: 'myapp:latest',
+            tag: 'myapp:v1.0'
+          });
+
+          expect(result.content[0].text).toContain('Image tagged');
+        });
+      });
+    });
+
+    describe('error propagation', () => {
+      it('should propagate errors from underlying methods', async () => {
+        jest.spyOn(dockerService, 'manageContainers')
+          .mockResolvedValue({
+            isError: true,
+            content: [{ type: 'text', text: 'Container not found' }]
+          });
+
+        const result = await dockerService.dockerContainerStart({
+          container: 'nonexistent'
+        });
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('Container not found');
+      });
+    });
+  });
 });

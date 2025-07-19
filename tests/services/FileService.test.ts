@@ -672,4 +672,476 @@ describe('FileService', () => {
       expect(end1 - start1).toBeGreaterThanOrEqual(0);
     });
   });
+
+  describe('Enhanced FileService Functionality', () => {
+    describe('formatFile', () => {
+      test('should format file with provided command', async () => {
+        const testFile = 'format-test.txt';
+        const fullPath = join(tempWorkspace, testFile);
+        
+        await fs.writeFile(fullPath, 'test content');
+        
+        // Use a simple echo command for testing
+        const result = await fileService.formatFile(testFile, 'echo "formatted"');
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('formatted successfully');
+      });
+
+      test('should handle missing format command', async () => {
+        const result = await fileService.formatFile('test.txt');
+        
+        expect(result.content[0].text).toBe('No format command provided');
+      });
+
+      test('should handle format command errors', async () => {
+        const testFile = 'format-error-test.txt';
+        const fullPath = join(tempWorkspace, testFile);
+        
+        await fs.writeFile(fullPath, 'test content');
+        
+        const result = await fileService.formatFile(testFile, 'invalid-command-that-does-not-exist');
+        
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('File formatting failed');
+      });
+    });
+
+    describe('createFile', () => {
+      test('should create file with content', async () => {
+        const testFile = 'created-file.txt';
+        const testContent = 'Created file content';
+        
+        const result = await fileService.createFile(testFile, testContent);
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('successfully written');
+        
+        // Verify file exists
+        const fullPath = join(tempWorkspace, testFile);
+        const fileExists = await fs.access(fullPath).then(() => true).catch(() => false);
+        expect(fileExists).toBe(true);
+        
+        // Verify content
+        const savedContent = await fs.readFile(fullPath, 'utf-8');
+        expect(savedContent).toBe(testContent);
+      });
+
+      test('should create file with custom commit message', async () => {
+        const testFile = 'custom-commit-file.txt';
+        const testContent = 'Custom commit content';
+        
+        const result = await fileService.createFile(testFile, testContent, {
+          commitMessage: 'Custom commit message'
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('successfully written');
+      });
+    });
+
+    describe('Enhanced writeFile with auto-format and auto-commit', () => {
+      test('should write file with skipAutoFormat option', async () => {
+        const testFile = 'skip-format-test.txt';
+        const testContent = 'Skip format content';
+        
+        const result = await fileService.writeFile(testFile, testContent, {
+          skipAutoFormat: true,
+          formatCommand: 'echo "should not run"'
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('successfully written');
+      });
+
+      test('should write file with skipAutoCommit option', async () => {
+        const testFile = 'skip-commit-test.txt';
+        const testContent = 'Skip commit content';
+        
+        const result = await fileService.writeFile(testFile, testContent, {
+          skipAutoCommit: true,
+          commitMessage: 'Should not commit'
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('successfully written');
+      });
+
+      test('should handle format command execution', async () => {
+        const testFile = 'format-exec-test.txt';
+        const testContent = 'Format execution test';
+        
+        // Use echo command to simulate formatting
+        const result = await fileService.writeFile(testFile, testContent, {
+          formatCommand: 'echo "formatting {{file}}"'
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('successfully written');
+      });
+
+      test('should handle format command errors gracefully', async () => {
+        const testFile = 'format-error-test.txt';
+        const testContent = 'Format error test';
+        
+        const result = await fileService.writeFile(testFile, testContent, {
+          formatCommand: 'invalid-format-command'
+        });
+        
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('Failed to auto-format file');
+      });
+    });
+  });
+
+  describe('Enhanced File Operations and Diff Management', () => {
+    describe('compareFiles', () => {
+      test('should compare two identical files', async () => {
+        const content = 'Hello, World!\nThis is a test file.';
+        const file1 = 'file1.txt';
+        const file2 = 'file2.txt';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content);
+        await fs.writeFile(join(tempWorkspace, file2), content);
+        
+        const result = await fileService.compareFiles({
+          file1,
+          file2,
+          format: 'unified'
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Files are identical');
+      });
+
+      test('should compare files with differences in unified format', async () => {
+        const content1 = 'Hello, World!\nThis is file 1.';
+        const content2 = 'Hello, World!\nThis is file 2.';
+        const file1 = 'file1.txt';
+        const file2 = 'file2.txt';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content1);
+        await fs.writeFile(join(tempWorkspace, file2), content2);
+        
+        const result = await fileService.compareFiles({
+          file1,
+          file2,
+          format: 'unified',
+          contextLines: 2
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('---');
+        expect(result.content[0].text).toContain('+++');
+        expect(result.content[0].text).toContain('-This is file 1.');
+        expect(result.content[0].text).toContain('+This is file 2.');
+      });
+
+      test('should compare files in side-by-side format', async () => {
+        const content1 = 'Line 1\nLine 2 original';
+        const content2 = 'Line 1\nLine 2 modified';
+        const file1 = 'file1.txt';
+        const file2 = 'file2.txt';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content1);
+        await fs.writeFile(join(tempWorkspace, file2), content2);
+        
+        const result = await fileService.compareFiles({
+          file1,
+          file2,
+          format: 'side-by-side'
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Side-by-side');
+        expect(result.content[0].text).toContain('original');
+        expect(result.content[0].text).toContain('modified');
+      });
+
+      test('should handle non-existent files', async () => {
+        const result = await fileService.compareFiles({
+          file1: 'nonexistent1.txt',
+          file2: 'nonexistent2.txt',
+          format: 'unified'
+        });
+        
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('does not exist');
+      });
+
+      test('should ignore whitespace when requested', async () => {
+        const content1 = 'Hello World\n   Line with spaces';
+        const content2 = 'Hello World\nLine with spaces';
+        const file1 = 'file1.txt';
+        const file2 = 'file2.txt';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content1);
+        await fs.writeFile(join(tempWorkspace, file2), content2);
+        
+        const result = await fileService.compareFiles({
+          file1,
+          file2,
+          format: 'unified',
+          ignoreWhitespace: true
+        });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Files are identical');
+      });
+    });
+
+    describe('analyzeFileDifferences', () => {
+      test('should analyze differences between files', async () => {
+        const content1 = 'Line 1\nLine 2\nLine 3\nLine 4';
+        const content2 = 'Line 1\nLine 2 modified\nLine 4\nLine 5';
+        const file1 = 'file1.txt';
+        const file2 = 'file2.txt';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content1);
+        await fs.writeFile(join(tempWorkspace, file2), content2);
+        
+        const result = await fileService.analyzeFileDifferences(file1, file2);
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('File Comparison Analysis');
+        expect(result.content[0].text).toContain('Lines added: 0');
+        expect(result.content[0].text).toContain('Lines removed: 0');
+        expect(result.content[0].text).toContain('Lines modified: 3');
+      });
+
+      test('should handle identical files', async () => {
+        const content = 'Identical content';
+        const file1 = 'file1.txt';
+        const file2 = 'file2.txt';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content);
+        await fs.writeFile(join(tempWorkspace, file2), content);
+        
+        const result = await fileService.analyzeFileDifferences(file1, file2);
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Identical: true');
+      });
+    });
+
+    describe('applyPatch', () => {
+      test('should apply a simple patch file', async () => {
+        const originalContent = 'Line 1\nLine 2\nLine 3';
+        const patchContent = `--- original.txt
++++ modified.txt
+@@ -1,3 +1,3 @@
+ Line 1
+-Line 2
++Line 2 modified
+ Line 3`;
+        
+        const originalFile = 'original.txt';
+        const patchFile = 'changes.patch';
+        
+        await fs.writeFile(join(tempWorkspace, originalFile), originalContent);
+        await fs.writeFile(join(tempWorkspace, patchFile), patchContent);
+        
+        const result = await fileService.applyPatch(patchFile, { dryRun: true });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Patch applied successfully');
+      });
+
+      test('should handle non-existent patch file', async () => {
+        const result = await fileService.applyPatch('nonexistent.patch');
+        
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('Patch file does not exist');
+      });
+
+      test('should create backup when requested', async () => {
+        const originalContent = 'Original content';
+        const patchContent = `--- original.txt
++++ modified.txt
+@@ -1 +1 @@
+-Original content
++Modified content`;
+        
+        const originalFile = 'original.txt';
+        const patchFile = 'changes.patch';
+        
+        await fs.writeFile(join(tempWorkspace, originalFile), originalContent);
+        await fs.writeFile(join(tempWorkspace, patchFile), patchContent);
+        
+        const result = await fileService.applyPatch(patchFile, { backup: true, dryRun: true });
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Patch applied successfully');
+      });
+    });
+
+    describe('createPatch', () => {
+      test('should create patch from two files', async () => {
+        const content1 = 'Line 1\nLine 2\nLine 3';
+        const content2 = 'Line 1\nLine 2 modified\nLine 3';
+        const file1 = 'original.txt';
+        const file2 = 'modified.txt';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content1);
+        await fs.writeFile(join(tempWorkspace, file2), content2);
+        
+        const result = await fileService.createPatch(file1, file2);
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('---');
+        expect(result.content[0].text).toContain('+++');
+        expect(result.content[0].text).toContain('-Line 2');
+        expect(result.content[0].text).toContain('+Line 2 modified');
+      });
+
+      test('should create patch and save to file', async () => {
+        const content1 = 'Original line';
+        const content2 = 'Modified line';
+        const file1 = 'original.txt';
+        const file2 = 'modified.txt';
+        const patchFile = 'changes.patch';
+        
+        await fs.writeFile(join(tempWorkspace, file1), content1);
+        await fs.writeFile(join(tempWorkspace, file2), content2);
+        
+        const result = await fileService.createPatch(file1, file2, patchFile);
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain(`Patch created successfully: ${patchFile}`);
+        
+        // Verify patch file was created
+        const patchExists = fsSync.existsSync(join(tempWorkspace, patchFile));
+        expect(patchExists).toBeTruthy();
+      });
+
+      test('should handle non-existent source files', async () => {
+        const result = await fileService.createPatch('nonexistent1.txt', 'nonexistent2.txt');
+        
+        expect(result.isError).toBeTruthy();
+        expect(result.content[0].text).toContain('does not exist');
+      });
+    });
+
+    describe('findAndReplace', () => {
+      test('should find and replace text in single file', async () => {
+        const content = 'Hello world\nHello universe\nGoodbye world';
+        const testFile = 'test.txt';
+        
+        await fs.writeFile(join(tempWorkspace, testFile), content);
+        
+        const result = await fileService.findAndReplace(
+          'world',
+          'planet',
+          { files: [testFile], preview: true }
+        );
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Find and Replace Preview');
+        expect(result.content[0].text).toContain('Hello planet');
+        expect(result.content[0].text).toContain('Goodbye planet');
+      });
+
+      test('should find and replace with regex pattern', async () => {
+        const content = 'Version 1.0.0\nVersion 2.1.3\nBuild 123';
+        const testFile = 'version.txt';
+        
+        await fs.writeFile(join(tempWorkspace, testFile), content);
+        
+        const result = await fileService.findAndReplace(
+          'Version \\d+\\.\\d+\\.\\d+',
+          'Version X.Y.Z',
+          { files: [testFile], regex: true, preview: true }
+        );
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('Version X.Y.Z');
+        expect(result.content[0].text).not.toContain('Build 123'); // Build line not in this file
+      });
+
+      test('should handle case sensitivity', async () => {
+        const content = 'Hello World\nhello world';
+        const testFile = 'case.txt';
+        
+        await fs.writeFile(join(tempWorkspace, testFile), content);
+        
+        const result = await fileService.findAndReplace(
+          'hello',
+          'hi',
+          { files: [testFile], caseSensitive: true, preview: true }
+        );
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).not.toContain('Hello World'); // Capital H should remain unchanged
+        expect(result.content[0].text).toContain('hi world'); // lowercase should be changed
+      });
+
+      test('should match whole words only', async () => {
+        const content = 'cat\ncatch\ncategory';
+        const testFile = 'words.txt';
+        
+        await fs.writeFile(join(tempWorkspace, testFile), content);
+        
+        const result = await fileService.findAndReplace(
+          'cat',
+          'dog',
+          { files: [testFile], wholeWord: true, preview: true }
+        );
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('dog');
+        expect(result.content[0].text).not.toContain('catch'); // Should remain unchanged since not shown in preview
+        expect(result.content[0].text).not.toContain('category'); // Should remain unchanged since not shown in preview
+      });
+
+      test('should find files by pattern', async () => {
+        const content = 'test content';
+        await fs.writeFile(join(tempWorkspace, 'file1.txt'), content);
+        await fs.writeFile(join(tempWorkspace, 'file2.txt'), content);
+        await fs.writeFile(join(tempWorkspace, 'file3.js'), content);
+        
+        const result = await fileService.findAndReplace(
+          'test',
+          'demo',
+          { filePattern: '*.txt', preview: true }
+        );
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('file1.txt');
+        expect(result.content[0].text).toContain('file2.txt');
+        expect(result.content[0].text).not.toContain('file3.js');
+      });
+
+      test('should handle backup creation', async () => {
+        const content = 'original content';
+        const testFile = 'backup-test.txt';
+        
+        await fs.writeFile(join(tempWorkspace, testFile), content);
+        
+        const result = await fileService.findAndReplace(
+          'original',
+          'modified',
+          { files: [testFile], backup: true, preview: true }
+        );
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('backup');
+      });
+
+      test('should handle no matches found', async () => {
+        const content = 'Hello world';
+        const testFile = 'nomatch.txt';
+        
+        await fs.writeFile(join(tempWorkspace, testFile), content);
+        
+        const result = await fileService.findAndReplace(
+          'nonexistent',
+          'replacement',
+          { files: [testFile] }
+        );
+        
+        expect(result.isError).toBeFalsy();
+        expect(result.content[0].text).toContain('No matches found');
+      });
+    });
+  });
 });

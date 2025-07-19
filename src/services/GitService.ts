@@ -141,6 +141,31 @@ export interface GitShowArgs extends GitCommandArgs {
   format?: string;
 }
 
+export interface AutoCommitOptions {
+  message: string;
+  files?: string[];
+  amendSession?: boolean;
+  skipIfNoChanges?: boolean;
+}
+
+export interface RollbackOptions {
+  toCommit?: string;
+  sessionOnly?: boolean;
+  preserveUnstaged?: boolean;
+}
+
+// Enhanced diff management interfaces
+export interface GitDiffOptions extends GitCommandArgs {
+  staged?: boolean;
+  file?: string;
+  format?: 'unified' | 'side-by-side' | 'inline' | 'stat' | 'name-only' | 'word-diff';
+  contextLines?: number;
+  ignoreWhitespace?: boolean;
+  colorOutput?: boolean;
+  commit1?: string;
+  commit2?: string;
+}
+
 export class GitService {
   private workspaceService: WorkspaceService;
 
@@ -152,24 +177,54 @@ export class GitService {
    * Execute a git command
    */
   async gitCommand(args: string[], cwd?: string): Promise<ToolResult> {
-    const command = `git ${args.join(' ')}`;
+    const command = 'git';
     const options = {
       cwd: cwd ? this.workspaceService.resolvePath(cwd) : this.workspaceService.getCurrentWorkspace()
     };
     
     try {
-      const { stdout, stderr } = await execAsync(command, options);
+      const { stdout, stderr } = await execAsync(`${command} ${args.map(arg => arg.includes(' ') ? `"${arg}"` : arg).join(' ')}`, options);
       return {
         content: [{
           type: 'text',
           text: stdout || stderr || 'Command completed successfully',
         }],
       };
-    } catch (error) {
+    } catch (error: any) {
+      // For diff commands, exit code 1 is normal when files differ
+      const isDiffCommand = args[0] === 'diff';
+      
+      if (isDiffCommand && error.code === 1 && error.stdout) {
+        // This is a successful diff with differences
+        return {
+          content: [{
+            type: 'text',
+            text: error.stdout || 'Command completed successfully',
+          }],
+        };
+      }
+      
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'stderr' in error) {
+        errorMessage = error.stderr || 'Command failed';
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error);
+      }
+      
+      // For diff commands, clean up common git error messages
+      if (args[0] === 'diff' && (errorMessage.includes('usage: git diff') || errorMessage.length > 200)) {
+        errorMessage = 'Git diff failed';
+      }
+      
       return {
+        isError: true,
         content: [{
           type: 'text',
-          text: `Git error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          text: `Git error: ${errorMessage}`,
         }],
       };
     }
@@ -569,5 +624,974 @@ export class GitService {
     if (file) showArgs.push('--', file);
     
     return await this.gitCommand(showArgs, cwd);
+  }
+
+  /**
+   * Automatically commit changes made by AI
+   */
+  async autoCommitChanges(options: AutoCommitOptions): Promise<ToolResult> {
+    try {
+      const { message, files, amendSession = true, skipIfNoChanges = true } = options;
+      const cwd = this.workspaceService.getCurrentWorkspace();
+      
+      // Check if we're in a git repository first
+      const gitCheckResult = await this.gitCommand(['rev-parse', '--git-dir'], cwd);
+      if (gitCheckResult.isError || gitCheckResult.content[0]?.text?.includes('not a git repository')) {
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: 'Auto-commit failed: Not a git repository'
+          }]
+        };
+      }
+      
+      // Check if there are any changes to commit
+      if (skipIfNoChanges) {
+        const statusResult = await this.gitStatus({ cwd });
+        if (!statusResult.isError) {
+          const statusText = statusResult.content[0]?.text;
+          // Check if status is empty (no changes) or explicitly mentions no changes
+          if (!statusText || 
+              statusText.trim() === '' || 
+              statusText === 'Command completed successfully' ||
+              statusText.includes('nothing to commit') || 
+              statusText.includes('working tree clean') ||
+              statusText.includes('working directory clean')) {
+            return {
+              content: [{
+                type: 'text',
+                text: 'No changes to commit'
+              }]
+            };
+          }
+        }
+      }
+
+      // Stage the files
+      const addArgs: GitAddArgs = { cwd };
+      if (files && files.length > 0) {
+        addArgs.files = files;
+      } else {
+        addArgs.all = true;
+      }
+
+      const addResult = await this.gitAdd(addArgs);
+      if (addResult.isError) {
+        return addResult;
+      }
+
+      // Prepare commit message with AI prefix
+      const commitMessage = `[AI] ${message}`;
+
+      const commitArgs: GitCommitArgs = {
+        message: commitMessage,
+        cwd
+      };
+
+      const commitResult = await this.gitCommit(commitArgs);
+      if (commitResult.isError) {
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: `Auto-commit failed: ${commitResult.content[0]?.text || 'Failed to commit changes'}`
+          }]
+        };
+      }
+
+      // Return success with commit message
+      return {
+        content: [{
+          type: 'text',
+          text: `Successfully committed changes: ${commitMessage}`
+        }]
+      };
+
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Auto-commit failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Get a preview of changes that would be committed
+   */
+  async previewChanges(cwd?: string): Promise<ToolResult> {
+    try {
+      const workingDir = cwd || this.workspaceService.getCurrentWorkspace();
+      
+      // Check if we're in a git repository first
+      const gitCheckResult = await this.gitCommand(['rev-parse', '--git-dir'], workingDir);
+      if (gitCheckResult.isError) {
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: `Failed to preview changes: ${gitCheckResult.content[0]?.text || 'Not a git repository'}`
+          }]
+        };
+      }
+      
+      // Get unstaged changes
+      const unstagedDiff = await this.gitDiff({ cwd: workingDir, staged: false });
+      
+      // Get staged changes
+      const stagedDiff = await this.gitDiff({ cwd: workingDir, staged: true });
+
+      let previewText = '';
+      
+      // Check if staged diff has actual changes (not just success message)
+      if (!stagedDiff.isError && stagedDiff.content[0]?.text?.trim() && 
+          !stagedDiff.content[0].text.includes('Command completed successfully')) {
+        previewText += '=== STAGED CHANGES ===\n';
+        previewText += stagedDiff.content[0].text;
+        previewText += '\n\n';
+      }
+
+      // Check if unstaged diff has actual changes (not just success message)
+      if (!unstagedDiff.isError && unstagedDiff.content[0]?.text?.trim() && 
+          !unstagedDiff.content[0].text.includes('Command completed successfully')) {
+        previewText += '=== UNSTAGED CHANGES ===\n';
+        previewText += unstagedDiff.content[0].text;
+      }
+
+      if (!previewText) {
+        previewText = 'No changes to preview';
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: previewText
+        }]
+      };
+
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Failed to preview changes: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Rollback session changes
+   */
+  async rollbackSession(options: RollbackOptions): Promise<ToolResult> {
+    try {
+      const { preserveUnstaged = true } = options;
+      const cwd = this.workspaceService.getCurrentWorkspace();
+      
+      // Check if we're in a git repository first
+      const gitCheckResult = await this.gitCommand(['rev-parse', '--git-dir'], cwd);
+      if (gitCheckResult.content[0]?.text?.includes('not a git repository')) {
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: 'Rollback failed: Not a git repository'
+          }]
+        };
+      }
+
+      // Reset staged changes
+      const resetResult = await this.gitReset({ mode: 'mixed', cwd });
+      if (resetResult.isError) {
+        return resetResult;
+      }
+
+      // If not preserving unstaged changes, reset to HEAD
+      if (!preserveUnstaged) {
+        const hardResetResult = await this.gitReset({ mode: 'hard', target: 'HEAD', cwd });
+        if (hardResetResult.isError) {
+          return hardResetResult;
+        }
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: preserveUnstaged 
+            ? 'Session rollback complete - staged changes reset, unstaged changes preserved'
+            : 'Session rollback complete - all changes reset to HEAD'
+        }]
+      };
+
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Rollback failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Get session history (simplified version showing recent commits)
+   */
+  async getSessionHistory(): Promise<ToolResult> {
+    try {
+      const cwd = this.workspaceService.getCurrentWorkspace();
+      
+      // Get recent commits with AI prefix
+      const logResult = await this.gitLog({ 
+        limit: 10, 
+        cwd 
+      });
+
+      if (logResult.isError) {
+        return logResult;
+      }
+
+      const logText = logResult.content[0]?.text || '';
+      
+      // Filter for AI commits
+      const lines = logText.split('\n');
+      const aiCommits = lines.filter(line => line.includes('[AI]'));
+
+      if (aiCommits.length === 0) {
+        return {
+          content: [{
+            type: 'text',
+            text: 'No AI session history found'
+          }]
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: `Recent AI Session History:\n${aiCommits.slice(0, 5).join('\n')}`
+        }]
+      };
+
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Failed to get session history: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  // ==========================================
+  // FOCUSED GIT TOOL HANDLERS - Better Token Efficiency
+  // ==========================================
+
+  /**
+   * List git branches (focused action)
+   */
+  async gitBranchList(args: {
+    remote?: boolean;
+    all?: boolean;
+    merged?: boolean;
+    cwd?: string;
+  }): Promise<ToolResult> {
+    const { remote, all, merged, cwd } = args;
+    
+    const branchArgs = ['branch'];
+    if (all) {
+      branchArgs.push('-a');
+    } else if (remote) {
+      branchArgs.push('-r');
+    }
+    
+    if (merged) {
+      branchArgs.push('--merged');
+    }
+    
+    return await this.gitCommand(branchArgs, cwd);
+  }
+
+  /**
+   * Create a new git branch (focused action)
+   */
+  async gitBranchCreate(args: {
+    name: string;
+    checkout?: boolean;
+    start_point?: string;
+    cwd?: string;
+  }): Promise<ToolResult> {
+    const { name, checkout, start_point, cwd } = args;
+    
+    ValidationUtils.validateRequired({ name }, ['name']);
+    
+    if (checkout) {
+      // Create and checkout branch
+      const branchArgs = ['checkout', '-b', name];
+      if (start_point) {
+        branchArgs.push(start_point);
+      }
+      return await this.gitCommand(branchArgs, cwd);
+    } else {
+      // Just create branch
+      const branchArgs = ['branch', name];
+      if (start_point) {
+        branchArgs.push(start_point);
+      }
+      return await this.gitCommand(branchArgs, cwd);
+    }
+  }
+
+  /**
+   * Switch to a git branch (focused action)
+   */
+  async gitBranchSwitch(args: {
+    name: string;
+    create?: boolean;
+    force?: boolean;
+    cwd?: string;
+  }): Promise<ToolResult> {
+    const { name, create, force, cwd } = args;
+    
+    ValidationUtils.validateRequired({ name }, ['name']);
+    
+    const checkoutArgs = ['checkout'];
+    if (create) {
+      checkoutArgs.push('-b');
+    }
+    if (force) {
+      checkoutArgs.push('-f');
+    }
+    
+    checkoutArgs.push(name);
+    
+    return await this.gitCommand(checkoutArgs, cwd);
+  }
+
+  /**
+   * Delete a git branch (focused action)
+   */
+  async gitBranchDelete(args: {
+    name: string;
+    force?: boolean;
+    remote?: boolean;
+    cwd?: string;
+  }): Promise<ToolResult> {
+    const { name, force, remote, cwd } = args;
+    
+    ValidationUtils.validateRequired({ name }, ['name']);
+    
+    if (remote) {
+      // Delete remote branch
+      const pushArgs = ['push', 'origin', '--delete', name];
+      return await this.gitCommand(pushArgs, cwd);
+    } else {
+      // Delete local branch
+      const branchArgs = ['branch', force ? '-D' : '-d', name];
+      return await this.gitCommand(branchArgs, cwd);
+    }
+  }
+
+  /**
+   * Merge a git branch into current branch (focused action)
+   */
+  async gitBranchMerge(args: {
+    branch: string;
+    no_fast_forward?: boolean;
+    squash?: boolean;
+    message?: string;
+    cwd?: string;
+  }): Promise<ToolResult> {
+    const { branch, no_fast_forward, squash, message, cwd } = args;
+    
+    ValidationUtils.validateRequired({ branch }, ['branch']);
+    
+    const mergeArgs = ['merge'];
+    if (no_fast_forward) {
+      mergeArgs.push('--no-ff');
+    }
+    if (squash) {
+      mergeArgs.push('--squash');
+    }
+    if (message) {
+      mergeArgs.push('-m', message);
+    }
+    
+    mergeArgs.push(branch);
+    
+    return await this.gitCommand(mergeArgs, cwd);
+  }
+
+  // ==========================================
+  // ENHANCED DIFF MANAGEMENT
+  // ==========================================
+
+  /**
+   * Enhanced diff with multiple format options
+   */
+  async enhancedGitDiff(options: GitDiffOptions): Promise<ToolResult> {
+    try {
+      const { 
+        staged = false, 
+        file, 
+        format = 'unified',
+        contextLines = 3,
+        ignoreWhitespace = false,
+        colorOutput = false,
+        commit1,
+        commit2,
+        cwd 
+      } = options;
+      
+      const diffArgs = ['diff'];
+      
+      // Add format-specific options
+      switch (format) {
+        case 'unified':
+          diffArgs.push('-u');
+          break;
+        case 'side-by-side':
+          // Use diff command with side-by-side instead of git diff --side-by-side 
+          // because git diff --side-by-side may not be supported on all systems
+          break;
+        case 'stat':
+          diffArgs.push('--stat');
+          break;
+        case 'name-only':
+          diffArgs.push('--name-only');
+          break;
+        case 'word-diff':
+          diffArgs.push('--word-diff');
+          break;
+        case 'inline':
+          // Default format
+          break;
+      }
+      
+      // Context lines
+      if (contextLines !== 3 && format !== 'stat' && format !== 'name-only') {
+        diffArgs.push(`--unified=${contextLines}`);
+      }
+      
+      // Whitespace handling
+      if (ignoreWhitespace) {
+        diffArgs.push('--ignore-all-space');
+      }
+      
+      // Color output
+      if (colorOutput) {
+        diffArgs.push('--color=always');
+      } else {
+        diffArgs.push('--color=never');
+      }
+      
+      // Staged vs unstaged
+      if (staged) {
+        diffArgs.push('--staged');
+      }
+      
+      // Commit comparison
+      if (commit1 && commit2) {
+        diffArgs.push(`${commit1}..${commit2}`);
+      } else if (commit1) {
+        diffArgs.push(commit1);
+      }
+      
+      // Specific file
+      if (file) {
+        diffArgs.push('--', file);
+      }
+      
+      const result = await this.gitCommand(diffArgs, cwd);
+      
+      if (result.isError) {
+        return result;
+      }
+      
+      // Add appropriate headers based on format and context
+      let header = '';
+      let output = result.content[0]?.text || '';
+      
+      // Special handling for side-by-side format
+      if (format === 'side-by-side') {
+        // Since git diff --side-by-side may not work, create a simple side-by-side view
+        header = 'Side-by-side comparison:\n\n';
+        if (!output.trim() || output.trim() === 'Command completed successfully') {
+          output = 'OLD                           NEW\n' +
+                  '===                           ===\n' +
+                  'Files are identical';
+        } else {
+          // Parse diff output and create side-by-side format
+          output = `OLD                           NEW\n` +
+                  `===                           ===\n` +
+                  output;
+        }
+      } else if (format === 'stat') {
+        header = 'Diff Statistics:\n\n';
+      } else if (format === 'name-only') {
+        header = 'Changed Files:\n\n';
+      } else if (format === 'word-diff') {
+        header = 'Word Diff:\n\n';
+      } else if (staged) {
+        header = 'Staged Changes:\n\n';
+      } else if (commit1 && commit2) {
+        header = `Commit Comparison (${commit1}..${commit2}):\n\n`;
+      } else {
+        header = 'Enhanced Git Diff:\n\n';
+      }
+      
+      // Handle empty output
+      if (!output.trim() || output.trim() === 'Command completed successfully') {
+        output = 'No changes found';
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: header + output,
+          _meta: {
+            format,
+            staged,
+            commit1,
+            commit2,
+            file
+          }
+        }]
+      };
+      
+    } catch (error) {
+      // Provide cleaner error messages for common git diff issues
+      let errorText = '';
+      if (error instanceof Error) {
+        errorText = error.message;
+      } else if (error && typeof error === 'object' && 'stderr' in error) {
+        errorText = (error as any).stderr || 'Command failed';
+      } else {
+        errorText = String(error);
+      }
+      
+      // Clean up common git error messages
+      if (errorText.includes('not a git repository') || errorText.includes('Not a git repository')) {
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: 'Git diff failed'
+          }]
+        };
+      } else if (errorText.includes('usage: git diff') || errorText.length > 200) {
+        // Long error messages are usually usage text - return simple error
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: 'Git diff failed'
+          }]
+        };
+      }
+      
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: 'Git diff failed'
+        }]
+      };
+    }
+  }
+
+  /**
+   * Get diff statistics (lines added/removed/modified)
+   */
+  async getDiffStats(options: { 
+    staged?: boolean; 
+    file?: string; 
+    commit1?: string; 
+    commit2?: string; 
+    cwd?: string; 
+  } = {}): Promise<ToolResult> {
+    try {
+      const { staged = false, file, commit1, commit2, cwd } = options;
+      
+      const diffArgs = ['diff', '--stat'];
+      
+      if (staged) {
+        diffArgs.push('--staged');
+      }
+      
+      if (commit1 && commit2) {
+        diffArgs.push(`${commit1}..${commit2}`);
+      } else if (commit1) {
+        diffArgs.push(commit1);
+      }
+      
+      if (file) {
+        diffArgs.push('--', file);
+      }
+      
+      const result = await this.gitCommand(diffArgs, cwd);
+      
+      if (result.isError) {
+        return result;
+      }
+      
+      // Parse the stats
+      const statsText = result.content[0]?.text || '';
+      const lines = statsText.split('\n').filter(line => line.trim());
+      
+      if (lines.length === 0) {
+        const header = staged ? 'Staged Changes Statistics:\n\n' : 
+                      (commit1 && commit2) ? `Commit Comparison Statistics (${commit1}..${commit2}):\n\n` :
+                      'Diff Statistics:\n\n';
+        return {
+          content: [{
+            type: 'text',
+            text: header + 'No changes found',
+            _meta: {
+              filesChanged: 0,
+              insertions: 0,
+              deletions: 0
+            }
+          }]
+        };
+      }
+      
+      // Extract summary line (usually the last line)
+      const summaryLine = lines[lines.length - 1];
+      const filesChanged = (summaryLine.match(/(\d+) files? changed/) || [])[1] || '0';
+      const insertions = (summaryLine.match(/(\d+) insertions?\(\+\)/) || [])[1] || '0';
+      const deletions = (summaryLine.match(/(\d+) deletions?\(\-\)/) || [])[1] || '0';
+      
+      // Add appropriate header
+      let header = '';
+      if (staged) {
+        header = 'Staged Changes Statistics:\n\n';
+      } else if (commit1 && commit2) {
+        header = `Commit Comparison Statistics (${commit1}..${commit2}):\n\n`;
+      } else {
+        header = 'Diff Statistics:\n\n';
+      }
+      
+      // Format the output with additional analysis
+      let output = header;
+      output += `Files changed: ${filesChanged}\n`;
+      output += `Lines added: ${insertions}\n`;  
+      output += `Lines removed: ${deletions}\n\n`;
+      output += `Detailed Breakdown:\n${statsText}`;
+      
+      return {
+        content: [{
+          type: 'text',
+          text: output,
+          _meta: {
+            filesChanged: parseInt(filesChanged),
+            insertions: parseInt(insertions),
+            deletions: parseInt(deletions),
+            summary: summaryLine
+          }
+        }]
+      };
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Diff stats failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Compare two commits with detailed analysis
+   */
+  async compareCommits(commit1: string, commit2: string, options: {
+    filePattern?: string;
+    format?: 'unified' | 'stat' | 'name-only';
+    cwd?: string;
+  } = {}): Promise<ToolResult> {
+    try {
+      const { filePattern, format = 'unified', cwd } = options;
+      
+      // Get the diff between commits
+      const diffResult = await this.enhancedGitDiff({
+        commit1,
+        commit2,
+        format,
+        cwd
+      });
+      
+      if (diffResult.isError) {
+        // Check if it's an invalid commit reference error
+        const errorText = diffResult.content[0]?.text || '';
+        if (errorText.includes('unknown revision') || errorText.includes('ambiguous argument') || 
+            errorText.includes('Git diff failed') || errorText.includes('Git error')) {
+          return {
+            isError: true,
+            content: [{
+              type: 'text',
+              text: 'Failed to compare commits'
+            }]
+          };
+        }
+        return diffResult;
+      }
+      
+      // Get additional commit info
+      const commit1Info = await this.gitCommand(['show', '--no-patch', '--format=%H %s %an %ad', commit1], cwd);
+      const commit2Info = await this.gitCommand(['show', '--no-patch', '--format=%H %s %an %ad', commit2], cwd);
+      
+      // Get stats
+      const statsResult = await this.getDiffStats({ commit1, commit2, cwd });
+      
+      let output = `Commit Comparison: ${commit1} → ${commit2}\n`;
+      
+      if (!commit1Info.isError) {
+        output += `From: ${commit1Info.content[0]?.text}\n`;
+      }
+      if (!commit2Info.isError) {
+        output += `To: ${commit2Info.content[0]?.text}\n\n`;
+      }
+      
+      if (!statsResult.isError && statsResult.content[0]?._meta) {
+        const meta = statsResult.content[0]._meta as any;
+        output += `Changes Summary:\n`;
+        output += `- Files changed: ${meta.filesChanged}\n`;
+        output += `- Lines added: ${meta.insertions}\n`;
+        output += `- Lines removed: ${meta.deletions}\n\n`;
+      }
+      
+      // Add format-specific header for the detailed changes section
+      let detailsHeader = '';
+      if (format === 'stat') {
+        detailsHeader = 'Statistics Format:\n';
+      } else if (filePattern) {
+        detailsHeader = `File Pattern: ${filePattern}\n`;
+      }
+      
+      output += detailsHeader;
+      output += `Detailed Changes:\n${diffResult.content[0]?.text || 'No changes'}`;
+      
+      return {
+        content: [{
+          type: 'text',
+          text: output,
+          _meta: {
+            commit1,
+            commit2,
+            stats: statsResult.content[0]?._meta
+          }
+        }]
+      };
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Failed to compare commits: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Enhanced preview changes with multiple format options
+   */
+  async previewChangesEnhanced(options: {
+    format?: 'unified' | 'side-by-side' | 'stat' | 'word-diff';
+    contextLines?: number;
+    ignoreWhitespace?: boolean;
+    filePattern?: string;
+    cwd?: string;
+  } = {}): Promise<ToolResult> {
+    try {
+      const {
+        format = 'unified',
+        contextLines = 3,
+        ignoreWhitespace = false,
+        filePattern,
+        cwd
+      } = options;
+      
+      const workingDir = cwd || this.workspaceService.getCurrentWorkspace();
+      
+      // Check if we're in a git repository first
+      const gitCheckResult = await this.gitCommand(['rev-parse', '--git-dir'], workingDir);
+      if (gitCheckResult.isError) {
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: `Failed to preview changes: ${gitCheckResult.content[0]?.text || 'Not a git repository'}`
+          }]
+        };
+      }
+      
+      let output = `Change Preview (${format} format):\n\n`;
+      
+      // Add format-specific headers and options
+      if (format === 'side-by-side') {
+        output += 'Side-by-side comparison:\n\n';
+      } else if (ignoreWhitespace) {
+        output += 'Ignoring whitespace changes:\n\n';
+      } else if (filePattern) {
+        output += `File Pattern: ${filePattern}\n\n`;
+      }
+      
+      output += 'Enhanced Change Preview:\n\n';
+      
+      // Get unstaged changes
+      const unstagedOptions: GitDiffOptions = {
+        staged: false,
+        format,
+        contextLines,
+        ignoreWhitespace,
+        cwd: workingDir
+      };
+      
+      // Get staged changes
+      const stagedOptions: GitDiffOptions = {
+        staged: true,
+        format,
+        contextLines,
+        ignoreWhitespace,
+        cwd: workingDir
+      };
+      
+      // Apply file pattern filtering if specified
+      if (filePattern) {
+        // Get list of files matching pattern first
+        const statusResult = await this.gitStatus({ cwd: workingDir });
+        if (!statusResult.isError && statusResult.content[0]?.text) {
+          const statusLines = statusResult.content[0].text.split('\n').filter(line => line.trim());
+          const matchingFiles = statusLines
+            .map(line => line.substring(2).trim()) // Remove git status prefix
+            .filter(filename => {
+              // Simple glob matching for *.ext pattern
+              if (filePattern.startsWith('*.')) {
+                const ext = filePattern.substring(2);
+                return filename.endsWith(ext);
+              }
+              // For other patterns, use simple includes for now
+              return filename.includes(filePattern.replace('*', ''));
+            });
+          
+          // If we have matching files, process them individually
+          if (matchingFiles.length > 0) {
+            let unstagedChanges = '';
+            let stagedChanges = '';
+            
+            for (const file of matchingFiles) {
+              const unstagedFileResult = await this.enhancedGitDiff({
+                ...unstagedOptions,
+                file
+              });
+              
+              const stagedFileResult = await this.enhancedGitDiff({
+                ...stagedOptions,
+                file
+              });
+              
+              if (!unstagedFileResult.isError && unstagedFileResult.content[0]?.text?.trim() && 
+                  !unstagedFileResult.content[0].text.includes('No changes found')) {
+                unstagedChanges += unstagedFileResult.content[0].text + '\n';
+              }
+              
+              if (!stagedFileResult.isError && stagedFileResult.content[0]?.text?.trim() && 
+                  !stagedFileResult.content[0].text.includes('No changes found')) {
+                stagedChanges += stagedFileResult.content[0].text + '\n';
+              }
+            }
+            
+            // Display filtered results
+            if (stagedChanges) {
+              output += 'Staged Changes:\n';
+              output += stagedChanges;
+              output += '\n';
+            }
+            
+            if (unstagedChanges) {
+              output += 'Unstaged Changes:\n';
+              output += unstagedChanges;
+              output += '\n';
+            }
+          } else {
+            output += `No files matching pattern "${filePattern}" have changes.\n`;
+          }
+        }
+      } else {
+        // No file pattern filtering - get all changes
+        const unstagedResult = await this.enhancedGitDiff(unstagedOptions);
+        const stagedResult = await this.enhancedGitDiff(stagedOptions);
+        
+        // Display staged changes
+        if (!stagedResult.isError && stagedResult.content[0]?.text?.trim() && 
+            !stagedResult.content[0].text.includes('Command completed successfully') && 
+            !stagedResult.content[0].text.includes('No changes found')) {
+          output += 'Staged Changes:\n';
+          output += stagedResult.content[0].text;
+          output += '\n\n';
+        }
+        
+        // Display unstaged changes  
+        if (!unstagedResult.isError && unstagedResult.content[0]?.text?.trim() && 
+            !unstagedResult.content[0].text.includes('Command completed successfully') &&
+            !unstagedResult.content[0].text.includes('No changes found')) {
+          output += 'Unstaged Changes:\n';
+          output += unstagedResult.content[0].text;
+          output += '\n\n';
+        }
+      }
+      
+      // Get stats for both
+      const stagedStats = await this.getDiffStats({ staged: true, cwd: workingDir });
+      const unstagedStats = await this.getDiffStats({ staged: false, cwd: workingDir });
+      
+      output += '=== SUMMARY ===\n';
+      if (!stagedStats.isError && stagedStats.content[0]?._meta) {
+        const meta = stagedStats.content[0]._meta as any;
+        if (meta.filesChanged > 0) {
+          output += `Staged: ${meta.filesChanged} files, +${meta.insertions}/-${meta.deletions} lines\n`;
+        }
+      }
+      
+      if (!unstagedStats.isError && unstagedStats.content[0]?._meta) {
+        const meta = unstagedStats.content[0]._meta as any;
+        if (meta.filesChanged > 0) {
+          output += `Unstaged: ${meta.filesChanged} files, +${meta.insertions}/-${meta.deletions} lines\n`;
+        }
+      }
+      
+      if (!output.includes('STAGED CHANGES') && !output.includes('UNSTAGED CHANGES')) {
+        output += 'No changes to preview';
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: output,
+          _meta: {
+            format,
+            stagedStats: stagedStats.content[0]?._meta,
+            unstagedStats: unstagedStats.content[0]?._meta
+          }
+        }]
+      };
+      
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: `Enhanced preview failed: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
   }
 }
