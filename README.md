@@ -1,19 +1,6 @@
-# VS Code Agent MCP Server
+# Code MCP Server
 
-A comprehensive **Model Context Protocol (MCP) server** that enables AI assistants like Claude to interact seamlessly with VS Code workspaces. This server provides **70+ powerful development tools**   **Windows:**
-   ```json
-   {
-     "mcpServers": {
-       "code-mcp": {
-         "command": "node",
-         "args": ["C:\\Users\\YourUsername\\Desktop\\code-mcp\\dist\\src\\index.js"],
-         "env": {
-           "NODE_ENV": "production"
-         }
-       }
-     }
-   }
-   ```ations, code execution, Git management, Docker containerization, project scaffolding, intelligent workspace analysis, **project-specific configuration**, and **secure command execution**.
+A comprehensive **Model Context Protocol (MCP) server** that enables AI assistants like Claude to interact seamlessly with VS Code workspaces. This server provides **70+ powerful development tools** for file operations, code execution, Git management, Docker containerization, project scaffolding, intelligent workspace analysis, **project-specific configuration**, and **secure command execution**.
 
 > **Inspired by [codemcp](https://github.com/ezyang/codemcp)** - This project incorporates security and configuration concepts from the codemcp project, adding project-specific TOML configuration, restricted command execution, and session management features to enhance developer productivity and security.
 
