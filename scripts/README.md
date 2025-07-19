@@ -1,6 +1,6 @@
 # Scripts Directory
 
-This directory contains helper scripts for setting up and maintaining the vscode-mcp project.
+This directory contains helper scripts for setting up and maintaining the code-mcp project.
 
 ## 🔧 Configuration Scripts
 
@@ -41,6 +41,6 @@ chmod +x scripts/generate-claude-config.sh
 ### Path Issues
 Always run scripts from the project root directory:
 ```bash
-cd /path/to/vscode-mcp
+cd /path/to/code-mcp
 ./scripts/script-name.sh
 ```

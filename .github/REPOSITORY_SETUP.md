@@ -59,10 +59,10 @@ Create additional rules for:
 ## Repository Settings
 
 ### General Settings
-- **Repository name**: vscode-mcp
+- **Repository name**: code-mcp
 - **Description**: Full-featured coding agent MCP server for VS Code with Python, JavaScript, and Git support
 - **Website**: (Add your documentation URL)
-- **Topics**: `vscode`, `mcp`, `coding-agent`, `typescript`, `automation`
+- **Topics**: `code-mcp`, `mcp`, `coding-agent`, `typescript`, `automation`
 
 ### Features
 - [x] Issues

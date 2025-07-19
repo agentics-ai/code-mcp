@@ -4,7 +4,47 @@ This guide provides detailed setup instructions for all supported platforms.
 
 ## Quick Setup Summary
 
-| Platform | Command | Script |
+| Platform | Comma{
+  "mcpServers": {
+    "co{
+  "mcpServers": {
+    {
+  "mcp**Windows:**
+```json
+{
+  "mcpServers": {
+    "code-mcp": {
+      "command": "node",
+      "args": ["C:/Users/Username/Desktop/code-mcp/dist/src/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}   "code-mcp": {
+      "command": "node",
+      "args": ["C:/Users/Username/Desktop/code-mcp/dist/src/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+} {
+      "command": "node",
+      "args": ["/Users/username/Desktop/code-mcp/dist/src/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}      "command": "node",
+      "args": ["/path/to/your/project/dist/src/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+} |
 |----------|---------|--------|
 | **macOS/Linux** | `./scripts/generate-claude-config.sh` | Bash script |
 | **Windows (CMD)** | `scripts\generate-claude-config.bat` | Batch script |
@@ -31,7 +71,7 @@ pnpm --version
 ```bash
 # Clone and setup
 git clone <repository-url>
-cd vscode-mcp
+cd code-mcp
 pnpm install
 pnpm run build
 
@@ -72,7 +112,7 @@ npm install -g pnpm
 ```bash
 # Clone and setup
 git clone <repository-url>
-cd vscode-mcp
+cd code-mcp
 pnpm install
 pnpm run build
 
@@ -112,7 +152,7 @@ wsl --install
 ```cmd
 # Clone and setup
 git clone <repository-url>
-cd vscode-mcp
+cd code-mcp
 pnpm install
 pnpm run build
 
@@ -124,7 +164,7 @@ scripts\generate-claude-config.bat
 ```powershell
 # Clone and setup
 git clone <repository-url>
-cd vscode-mcp
+cd code-mcp
 pnpm install
 pnpm run build
 
@@ -150,7 +190,7 @@ Configuration path: `%APPDATA%\Claude\claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "vscode-agent": {
+    "code-mcp": {
       "command": "node",
       "args": ["<PATH_TO_PROJECT>/dist/src/index.js"],
       "env": {
@@ -167,9 +207,9 @@ Configuration path: `%APPDATA%\Claude\claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "vscode-agent": {
+    "code-mcp": {
       "command": "node",
-      "args": ["/Users/username/Desktop/vscode-mcp/dist/src/index.js"],
+      "args": ["/Users/username/Desktop/code-mcp/dist/src/index.js"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -182,9 +222,9 @@ Configuration path: `%APPDATA%\Claude\claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "vscode-agent": {
+    "code-mcp": {
       "command": "node",
-      "args": ["C:/Users/Username/Desktop/vscode-mcp/dist/src/index.js"],
+      "args": ["C:/Users/Username/Desktop/code-mcp/dist/src/index.js"],
       "env": {
         "NODE_ENV": "production"
       }

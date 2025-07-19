@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: vscode-mcp-server
+    container_name: code-mcp-server
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -39,7 +39,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: builder
-    container_name: vscode-mcp-server-dev
+    container_name: code-mcp-server-dev
     restart: "no"
     environment:
       - NODE_ENV=development
@@ -68,7 +68,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: builder
-    container_name: vscode-mcp-server-test
+    container_name: code-mcp-server-test
     environment:
       - NODE_ENV=test
       - LOG_LEVEL=error

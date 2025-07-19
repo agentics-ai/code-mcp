@@ -191,7 +191,7 @@ describe('MCP Server Integration Tests', () => {
       expect(response.result).toBeDefined();
       expect(response.result.protocolVersion).toBe("2024-11-05");
       expect(response.result.serverInfo).toBeDefined();
-      expect(response.result.serverInfo.name).toBe("vscode-agent-mcp");
+      expect(response.result.serverInfo.name).toBe("code-mcp");
     });
 
     test('should list all available tools', async () => {
@@ -450,7 +450,7 @@ print(f'Platform: {platform.system()}')
       expect(response.error).toBeUndefined();
       expect(response.result).toBeDefined();
       // Should show project dependencies
-      expect(response.result.content[0].text).toContain('vscode-agent-mcp@');
+      expect(response.result.content[0].text).toContain('code-mcp@');
     });
   });
 

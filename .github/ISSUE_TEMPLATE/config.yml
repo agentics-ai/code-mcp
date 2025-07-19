@@ -9,11 +9,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: GitHub Discussions
-    url: https://github.com/braincraft/vscode-mcp/discussions
+    url: https://github.com/agentics-ai/code-mcp/discussions
     about: Ask questions and discuss ideas with the community
   - name: Documentation
-    url: https://github.com/braincraft/vscode-mcp/blob/main/README.md
+    url: https://github.com/agentics-ai/code-mcp/blob/main/README.md
     about: Check our comprehensive documentation
   - name: Security Issues
-    url: https://github.com/braincraft/vscode-mcp/security/advisories/new
+    url: https://github.com/agentics-ai/code-mcp/security/advisories/new
     about: Report security vulnerabilities privately

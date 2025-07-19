@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # generate-claude-config.sh
-# Generate Claude Desktop configuration for vscode-mcp
+# Generate Claude Desktop configuration for code-mcp
 
 set -e
 
-# Get the current directory (should be the vscode-mcp project root)
+# Get the current directory (should be the code-mcp project root)
 PROJECT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$PROJECT_DIR")
 
 # Check if we're in the right directory
 if [[ ! -f "package.json" ]] || [[ ! -d "src" ]]; then
-    echo "❌ Please run this script from the vscode-mcp project root directory"
+    echo "❌ Please run this script from the code-mcp project root directory"
     exit 1
 fi
 
@@ -58,7 +58,7 @@ echo "🔧 Generating Claude Desktop configuration..."
 cat > "$CONFIG_FILE" << EOF
 {
   "mcpServers": {
-    "vscode-agent": {
+    "code-mcp": {
       "command": "node",
       "args": ["$PROJECT_DIR/dist/src/index.js"],
       "env": {

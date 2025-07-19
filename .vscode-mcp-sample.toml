@@ -87,7 +87,7 @@ This VS Code MCP server project follows these guidelines:
 """
 
 # Brief project description
-projectDescription = "VS Code Agent MCP Server - Secure AI-powered development tools"
+projectDescription = "Code MCP Server - Secure AI-powered development tools"
 
 # Custom tools specific to this project
 [[customTools]]

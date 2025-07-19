@@ -1,5 +1,5 @@
 {
-  "name": "vscode-agent-mcp",
+  "name": "code-mcp",
   "version": "2.0.0",
   "description": "Full-featured coding agent MCP server for VS Code with Python, JavaScript, and Git support",
   "main": "dist/src/index.js",
@@ -15,12 +15,12 @@
     "test:unit": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/services/",
     "test:integration": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/integration.test.ts --detectOpenHandles",
     "test:e2e": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/e2e.test.ts",
-    "test:server": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/VSCodeAgentServer.test.ts",
+    "test:server": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest tests/CodeMCPServer.test.ts",
     "test:all": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --coverage --verbose",
     "test:ci": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --ci --coverage --watchAll=false",
     "demo": "pnpm run build && node dist/demo/mcp-server-demonstration.js",
-    "docker:build": "docker build -t vscode-mcp-server .",
-    "docker:run": "docker run --rm -it vscode-mcp-server",
+    "docker:build": "docker build -t code-mcp-server .",
+    "docker:run": "docker run --rm -it code-mcp-server",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f mcp-server",
@@ -37,6 +37,14 @@
     "javascript",
     "git"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agentics-ai/code-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/agentics-ai/code-mcp/issues"
+  },
+  "homepage": "https://github.com/agentics-ai/code-mcp#readme",
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -44,7 +52,7 @@
     "@modelcontextprotocol/sdk": "^1.15.1"
   },
   "bin": {
-    "vscode-agent-mcp": "./dist/src/index.js"
+    "code-mcp": "./dist/src/index.js"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",

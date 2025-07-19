@@ -1,5 +1,5 @@
 # generate-claude-config.ps1
-# Generate Claude Desktop configuration for vscode-mcp on Windows
+# Generate Claude Desktop configuration for code-mcp on Windows
 
 param(
     [switch]$Force
@@ -9,13 +9,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 try {
-    # Get the current directory (should be the vscode-mcp project root)
+    # Get the current directory (should be the code-mcp project root)
     $ProjectDir = Get-Location
     $ProjectName = Split-Path $ProjectDir -Leaf
 
     # Check if we're in the right directory
     if (-not (Test-Path "package.json") -or -not (Test-Path "src")) {
-        Write-Host "❌ Please run this script from the vscode-mcp project root directory" -ForegroundColor Red
+        Write-Host "❌ Please run this script from the code-mcp project root directory" -ForegroundColor Red
         exit 1
     }
 
@@ -52,7 +52,7 @@ try {
 
     $ConfigContent = @{
         mcpServers = @{
-            "vscode-agent" = @{
+            "code-mcp" = @{
                 command = "node"
                 args = @("$JsonProjectDir/dist/src/index.js")
                 env = @{

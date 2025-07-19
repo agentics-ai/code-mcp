@@ -3,7 +3,7 @@
  */
 
 export const SERVER_CONFIG = {
-  name: 'vscode-agent-mcp',
+  name: 'code-mcp',
   version: '2.0.0',
 } as const;
 

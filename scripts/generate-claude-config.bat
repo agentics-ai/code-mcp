@@ -1,20 +1,30 @@
 @echo off
 REM generate-claude-config.bat
-REM Generate Claude Desktop configuration for vscode-mcp on Windows
+REM Generateecho {
+echo   "mcpServers": {
+echo     "code-mcp": {
+echo       "command": "node",
+echo       "args": ["%PROJECT_DIR%/dist/src/index.js"],
+echo       "env": {
+echo         "NODE_ENV": "production"
+echo       }
+echo     }
+echo   }
+echo }ktop configuration for code-mcp on Windows
 
 setlocal enabledelayedexpansion
 
-REM Get the current directory (should be the vscode-mcp project root)
+REM Get the current directory (should be the code-mcp project root)
 set "PROJECT_DIR=%CD%"
 for %%F in ("%PROJECT_DIR%") do set "PROJECT_NAME=%%~nxF"
 
 REM Check if we're in the right directory
 if not exist "package.json" (
-    echo ❌ Please run this script from the vscode-mcp project root directory
+    echo ❌ Please run this script from the code-mcp project root directory
     exit /b 1
 )
 if not exist "src" (
-    echo ❌ Please run this script from the vscode-mcp project root directory
+    echo ❌ Please run this script from the code-mcp project root directory
     exit /b 1
 )
 
@@ -53,7 +63,7 @@ set "JSON_PROJECT_DIR=%PROJECT_DIR:\=/%"
 (
 echo {
 echo   "mcpServers": {
-echo     "vscode-agent": {
+echo     "code-mcp": {
 echo       "command": "node",
 echo       "args": ["%JSON_PROJECT_DIR%/dist/src/index.js"],
 echo       "env": {
