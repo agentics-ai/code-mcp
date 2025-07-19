@@ -925,5 +925,125 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       },
       required: ['searchPattern', 'replacement']
     }
-  }
+  },
+  
+  // Secure Command Execution Management
+  {
+    name: 'secure_run_command',
+    description: 'Execute a command with security restrictions (only allowed commands)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        command: { type: 'string', description: 'Command to execute securely' },
+        cwd: { type: 'string', description: 'Working directory' },
+        timeout: { type: 'number', description: 'Command timeout in milliseconds' },
+        env: { type: 'object', description: 'Environment variables' },
+        commitResult: { type: 'boolean', description: 'Auto-commit changes after successful execution' },
+        commitMessage: { type: 'string', description: 'Custom commit message if commitResult is true' }
+      },
+      required: ['command']
+    }
+  },
+  {
+    name: 'secure_run_command_sequence',
+    description: 'Execute multiple commands in sequence with security restrictions',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        commands: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of commands to execute in sequence' 
+        },
+        cwd: { type: 'string', description: 'Working directory for all commands' },
+        timeout: { type: 'number', description: 'Timeout per command in milliseconds' },
+        commitResult: { type: 'boolean', description: 'Auto-commit after successful sequence' },
+        commitMessage: { type: 'string', description: 'Custom commit message' },
+        stopOnError: { type: 'boolean', description: 'Stop execution on first error (default: true)' }
+      },
+      required: ['commands']
+    }
+  },
+  {
+    name: 'get_allowed_commands',
+    description: 'Get list of commands that are allowed to run in this project',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    }
+  },
+  {
+    name: 'add_allowed_command',
+    description: 'Add a command to the project\'s allowed commands list',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        command: { type: 'string', description: 'Command to add to allowed list' }
+      },
+      required: ['command']
+    }
+  },
+  {
+    name: 'remove_allowed_command',
+    description: 'Remove a command from the project\'s allowed commands list',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        command: { type: 'string', description: 'Command to remove from allowed list' }
+      },
+      required: ['command']
+    }
+  },
+  {
+    name: 'run_custom_tool',
+    description: 'Execute a custom tool defined in project configuration',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        toolName: { type: 'string', description: 'Name of the custom tool to run' },
+        args: { type: 'object', description: 'Arguments to pass to the custom tool (replaces {{key}} placeholders)' }
+      },
+      required: ['toolName']
+    }
+  },
+
+  // Session Management
+  {
+    name: 'start_coding_session',
+    description: 'Start a new coding session for change tracking',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        description: { type: 'string', description: 'Description of what will be worked on' },
+        branch: { type: 'string', description: 'Git branch for this session' }
+      },
+      required: ['description']
+    }
+  },
+  {
+    name: 'end_coding_session',
+    description: 'End the current coding session',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    }
+  },
+  {
+    name: 'get_current_session',
+    description: 'Get information about the current coding session',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    }
+  },
+  {
+    name: 'get_session_history',
+    description: 'Get history of all coding sessions and their commits',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Maximum number of sessions to return' }
+      }
+    }
+  },
 ];

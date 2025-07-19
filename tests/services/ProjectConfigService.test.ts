@@ -85,8 +85,10 @@ describe('ProjectConfigService - Basic Tests', () => {
     expect(sampleConfig).toContain('[general]');
     expect(sampleConfig).toContain('formatOnSave');
     expect(sampleConfig).toContain('gitAutoCommit');
-    expect(sampleConfig).toContain('[commands]');
+    expect(sampleConfig).toContain('[security]');
     expect(sampleConfig).toContain('allowedCommands');
+    expect(sampleConfig).toContain('[customTools]');
+    expect(sampleConfig).toContain('[remoteServer]');
   });
 
   it('should track commits in session', async () => {

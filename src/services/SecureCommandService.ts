@@ -19,6 +19,7 @@ export interface SecureCommandOptions {
   skipAllowedCheck?: boolean;
   commitResult?: boolean;
   commitMessage?: string;
+  stopOnError?: boolean;
 }
 
 export interface CommandResult {
@@ -161,7 +162,9 @@ export class SecureCommandService {
           results.push(`   Error: ${result.content[0].text}`);
           
           // Stop execution on first error unless configured otherwise
-          break;
+          if (options.stopOnError !== false) {
+            break;
+          }
         } else {
           results.push(`✅ Command ${i + 1}: ${command}`);
           results.push(`   ${result.content[0].text}`);
@@ -337,6 +340,7 @@ export class SecureCommandService {
 
       return this.runCommand(command, {
         skipAllowedCheck: true, // Custom tools are pre-approved
+        commitResult: true,
         commitMessage: `Executed custom tool: ${toolName}`
       });
 

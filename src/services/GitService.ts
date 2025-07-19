@@ -840,39 +840,43 @@ export class GitService {
   /**
    * Get session history (simplified version showing recent commits)
    */
-  async getSessionHistory(): Promise<ToolResult> {
+  async getSessionHistory(limit?: number): Promise<ToolResult> {
     try {
-      const cwd = this.workspaceService.getCurrentWorkspace();
+      const logResult = await this.gitCommand(['log', '--oneline', '--grep=[AI]', ...(limit ? [`-${limit}`] : [])]);
       
-      // Get recent commits with AI prefix
-      const logResult = await this.gitLog({ 
-        limit: 10, 
-        cwd 
-      });
-
-      if (logResult.isError) {
-        return logResult;
-      }
-
-      const logText = logResult.content[0]?.text || '';
-      
-      // Filter for AI commits
-      const lines = logText.split('\n');
-      const aiCommits = lines.filter(line => line.includes('[AI]'));
-
-      if (aiCommits.length === 0) {
+      if (logResult.isError || !logResult.content[0]) {
         return {
+          isError: true,
           content: [{
             type: 'text',
-            text: 'No AI session history found'
+            text: 'No session history available (not a git repository or no AI commits found)'
           }]
         };
       }
 
+      const commits = logResult.content[0]?.text?.trim() || '';
+      if (!commits) {
+        return {
+          content: [{
+            type: 'text',
+            text: 'No AI session commits found'
+          }]
+        };
+      }
+
+      const commitLines = commits.split('\n');
+      let sessionText = `AI Session History (${commitLines.length} commits):\n\n`;
+      
+      commitLines.forEach((line, index) => {
+        const [hash, ...messageParts] = line.split(' ');
+        const message = messageParts.join(' ');
+        sessionText += `${index + 1}. ${hash}: ${message}\n`;
+      });
+
       return {
         content: [{
           type: 'text',
-          text: `Recent AI Session History:\n${aiCommits.slice(0, 5).join('\n')}`
+          text: sessionText
         }]
       };
 
@@ -881,7 +885,7 @@ export class GitService {
         isError: true,
         content: [{
           type: 'text',
-          text: `Failed to get session history: ${error instanceof Error ? error.message : String(error)}`
+          text: `Failed to get session history: ${error}`
         }]
       };
     }

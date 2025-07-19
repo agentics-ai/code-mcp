@@ -1,33 +1,92 @@
-allowedCommands = [
-  "npm",
-  "yarn",
-  "pnpm",
-  "bun",
-  "git",
-  "docker",
-  "docker-compose",
-  "prettier",
-  "eslint",
-  "tsc",
-  "tslint",
-  "pytest",
-  "jest",
-  "vitest",
-  "mocha",
-  "cargo",
-  "rustfmt",
-  "clippy",
-  "go",
-  "gofmt",
-  "golint"
-]
+# VS Code MCP Server Project Configuration
+[general]
 formatOnSave = true
 gitAutoCommit = true
-gitAutoCommitMessage = "[AI] Auto-commit: {{message}}"
+gitAutoCommitMessage = "[AI] {{message}}"
 sessionTracking = true
 maxSessionCommits = 50
+formatCommand = "prettier --write {{file}}"
+
+[security]
+allowedCommands = [
+  # Package managers
+  "npm", "yarn", "pnpm", "bun",
+  
+  # Git operations  
+  "git",
+  
+  # Docker and containerization
+  "docker", "docker-compose",
+  
+  # Code formatting and linting
+  "prettier", "eslint", "tsc", "tslint",
+  
+  # Testing frameworks
+  "pytest", "jest", "vitest", "mocha",
+  
+  # Build tools
+  "webpack", "vite", "rollup",
+  
+  # Language-specific tools
+  "cargo", "rustfmt", "clippy",
+  "go", "gofmt", "golint",
+  "python", "pip",
+  "node", "deno",
+  
+  # System utilities (safe subset)
+  "ls", "cat", "head", "tail", "grep", "find", "echo"
+]
+
+[project]
+projectDescription = "VS Code Agent MCP Server - Enhanced with project configuration and restricted command execution"
+projectInstructions = """
+Enhanced VS Code MCP Server with security and configuration features:
+
+1. **Security-First Design**
+   - All commands must be explicitly allowed in configuration
+   - Dangerous command patterns are automatically blocked
+   - Session tracking enables rollback of AI changes
+
+2. **Project Configuration**
+   - TOML-based configuration per project
+   - Custom tools and formatting commands
+   - Flexible security policies
+
+3. **Enhanced Git Integration** 
+   - Auto-commit with AI prefixes
+   - Session-based change tracking
+   - Multiple diff formats and analysis
+
+4. **Development Workflow**
+   - Auto-formatting after file edits
+   - Comprehensive error handling
+   - Token-efficient focused tools
+"""
+
+# Custom tools for this project
+[[customTools]]
+name = "format_project"
+command = "prettier --write 'src/**/*.{ts,js,json}' 'tests/**/*.{ts,js}'"
+description = "Format all TypeScript and JavaScript files in the project"
+
+[[customTools]]
+name = "test_all" 
+command = "npm test"
+description = "Run all project tests"
+
+[[customTools]]
+name = "build_project"
+command = "npm run build"  
+description = "Build the project"
 
 [remoteServer]
-enabled = true
+enabled = false
 host = "127.0.0.1"
-port = 3_000
+port = 3000
+
+[advanced]
+commandTimeout = 30000
+maxOutputLength = 10000
+logLevel = "info"
+auditLogging = true
+sessionTimeout = 60

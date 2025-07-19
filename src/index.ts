@@ -285,7 +285,10 @@ export class VSCodeAgentServer {
         return {
           content: [{
             type: 'text',
-            text: `Started coding session: ${session.description}\nSession ID: ${session.id}`
+            text: `Started coding session: ${session.description}\n` +
+                  `Session ID: ${session.id}\n` +
+                  `Started at: ${session.startTime}` +
+                  (session.branch ? `\nBranch: ${session.branch}` : '')
           }]
         };
       case 'end_coding_session':
@@ -296,9 +299,9 @@ export class VSCodeAgentServer {
             text: 'Coding session ended'
           }]
         };
-      case 'get_session_info':
-        const sessionInfo = this.projectConfigService.getCurrentSession();
-        if (!sessionInfo) {
+      case 'get_current_session':
+        const currentSession = this.projectConfigService.getCurrentSession();
+        if (!currentSession) {
           return {
             content: [{
               type: 'text',
@@ -309,38 +312,29 @@ export class VSCodeAgentServer {
         return {
           content: [{
             type: 'text',
-            text: JSON.stringify(sessionInfo, null, 2)
+            text: `Current Session:\n` +
+                  `ID: ${currentSession.id}\n` +
+                  `Description: ${currentSession.description}\n` +
+                  `Started: ${currentSession.startTime}\n` +
+                  `Commits: ${currentSession.commitHashes.length}` +
+                  (currentSession.branch ? `\nBranch: ${currentSession.branch}` : '') +
+                  `\nStatus: ${currentSession.isActive ? 'Active' : 'Inactive'}`
           }]
         };
-      case 'rollback_session':
-        if (!args.confirm) {
-          return {
-            isError: true,
-            content: [{
-              type: 'text',
-              text: 'Rollback requires confirmation. Set confirm: true to proceed.'
-            }]
-          };
-        }
-        return await this.gitService.rollbackSession({
-          preserveUnstaged: args.preserveUnstaged
-        });
-
-      // Enhanced Git Operations
-      case 'preview_changes':
-        return await this.gitService.previewChanges();
-      case 'auto_commit_changes':
-        return await this.gitService.autoCommitChanges({
-          message: args.message,
-          files: args.files,
-          amendSession: args.amendSession
-        });
       case 'get_session_history':
-        return await this.gitService.getSessionHistory();
+        return await this.gitService.getSessionHistory(args.limit);
 
       // Secure Command Execution
       case 'secure_run_command':
         return await this.secureCommandService.runCommand(args.command, {
+          cwd: args.cwd,
+          timeout: args.timeout,
+          env: args.env,
+          commitResult: args.commitResult,
+          commitMessage: args.commitMessage
+        });
+      case 'secure_run_command_sequence':
+        return await this.secureCommandService.runCommandSequence(args.commands, {
           cwd: args.cwd,
           timeout: args.timeout,
           commitResult: args.commitResult,
@@ -354,6 +348,18 @@ export class VSCodeAgentServer {
         return await this.secureCommandService.removeAllowedCommand(args.command);
       case 'run_custom_tool':
         return await this.secureCommandService.runCustomTool(args.toolName, args.args);
+
+      // Enhanced Git Operations
+      case 'preview_changes':
+        return await this.gitService.previewChanges();
+      case 'auto_commit_changes':
+        return await this.gitService.autoCommitChanges({
+          message: args.message,
+          files: args.files,
+          amendSession: args.amendSession
+        });
+      case 'get_session_history':
+        return await this.gitService.getSessionHistory();
 
       // Enhanced File Operations
       case 'enhanced_write_file':

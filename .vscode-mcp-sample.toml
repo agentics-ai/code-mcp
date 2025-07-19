@@ -1,0 +1,144 @@
+# VS Code MCP Server Project Configuration
+# This file controls what commands can be executed and how the AI assistant behaves
+
+[general]
+# Auto-format files after editing
+formatOnSave = true
+
+# Auto-commit AI changes to git
+gitAutoCommit = true
+
+# Track coding sessions for rollback capabilities
+sessionTracking = true
+
+# Maximum commits to keep in a single session
+maxSessionCommits = 50
+
+# Default format command (use {{file}} as placeholder)
+formatCommand = "prettier --write {{file}}"
+
+# Git auto-commit message template (use {{message}} as placeholder)
+gitAutoCommitMessage = "[AI] {{message}}"
+
+[security]
+# Commands that are allowed to run (security whitelist)
+allowedCommands = [
+    # Package managers
+    "npm", "yarn", "pnpm", "bun",
+    
+    # Git operations
+    "git",
+    
+    # Docker and containerization
+    "docker", "docker-compose",
+    
+    # Code formatting and linting
+    "prettier", "eslint", "tsc", "tslint",
+    
+    # Testing frameworks
+    "pytest", "jest", "vitest", "mocha", "junit",
+    
+    # Build tools
+    "webpack", "vite", "rollup", "parcel",
+    
+    # Language-specific tools
+    "cargo", "rustfmt", "clippy",   # Rust
+    "go", "gofmt", "golint",        # Go
+    "python", "pip",                # Python
+    "node", "deno",                 # JavaScript/TypeScript
+    "php", "composer",              # PHP
+    "ruby", "gem", "bundle",        # Ruby
+    "java", "mvn", "gradle",        # Java
+    
+    # System utilities (safe subset)
+    "ls", "dir", "cat", "head", "tail", "grep", "find", "which", "echo"
+]
+
+[project]
+# Project-specific instructions for the AI
+projectInstructions = """
+This VS Code MCP server project follows these guidelines:
+
+1. **Code Quality**
+   - Follow TypeScript best practices
+   - Use proper error handling with try/catch blocks
+   - Write comprehensive tests for new functionality
+   - Keep tools focused and single-purpose
+
+2. **Security**
+   - All shell commands must be in the allowedCommands list
+   - Validate user inputs before executing commands
+   - Use secure defaults and fail closed
+
+3. **Git Workflow**
+   - Auto-commit AI changes with descriptive messages
+   - Use feature branches for major changes
+   - Keep commit history clean and meaningful
+
+4. **Testing**
+   - Update tests when modifying functionality
+   - Ensure all tests pass before committing
+   - Use descriptive test names and assertions
+
+5. **Documentation**
+   - Document new tools with clear descriptions
+   - Update README when adding major features
+   - Include usage examples in tool descriptions
+"""
+
+# Brief project description
+projectDescription = "VS Code Agent MCP Server - Secure AI-powered development tools"
+
+# Custom tools specific to this project
+[[customTools]]
+name = "format_project"
+command = "prettier --write 'src/**/*.{ts,js,json}' 'tests/**/*.{ts,js}'"
+description = "Format all TypeScript and JavaScript files in the project"
+
+[[customTools]]
+name = "lint_project"
+command = "eslint src/ tests/ --ext .ts,.js --fix"
+description = "Lint and auto-fix all TypeScript and JavaScript files"
+
+[[customTools]]
+name = "test_all"
+command = "npm test"
+description = "Run all project tests"
+
+[[customTools]]
+name = "build_project"
+command = "npm run build"
+description = "Build the project for production"
+
+[[customTools]]
+name = "type_check"
+command = "tsc --noEmit"
+description = "Run TypeScript type checking without emitting files"
+
+[remoteServer]
+# Enable standalone server mode for web access (experimental)
+enabled = false
+host = "127.0.0.1"
+port = 3000
+
+# Enable Server-Sent Events for real-time updates
+sseEnabled = false
+
+[advanced]
+# Command execution timeout in milliseconds
+commandTimeout = 30000
+
+# Maximum output length before truncation
+maxOutputLength = 10000
+
+# Log level for debugging (error, warn, info, debug)
+logLevel = "info"
+
+# Enable audit logging of all commands
+auditLogging = true
+
+# Audit log file path (relative to workspace)
+auditLogFile = ".vscode-mcp-audit.log"
+
+# Session auto-cleanup after inactive time (minutes)
+sessionTimeout = 60
