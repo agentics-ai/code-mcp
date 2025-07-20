@@ -193,32 +193,48 @@ This experimental server provides development tools organized by category. Pleas
 
 ## 🎯 Usage Examples (Experimental Results May Vary)
 
-**Project Setup:**
+> **💡 Best Practice**: Always specify full project paths for more reliable workspace detection and operations. This helps the MCP server understand your project context better.
+
+**Project Setup with Full Path:**
 ```
-👤 "Create a new React project called 'my-app'"
+👤 "Create a new React project at /Users/username/projects/my-react-app"
 🤖 Attempts to use: create_project, npm_command, create_file
-📝 Note: May require manual adjustments or additional setup
+📝 Note: Full paths help with workspace detection and file operations
 ```
 
-**Code Analysis:**
+**Code Analysis with Specific Project:**
 ```
-👤 "Analyze the codebase and run tests"
+👤 "Analyze the codebase at /Users/username/projects/my-app and run tests"
 🤖 Tries to use: analyze_code, search_files, run_tests, git_status
-📝 Note: Analysis quality may vary depending on project structure
+📝 Note: Specifying the project path improves analysis accuracy
 ```
 
-**Git Workflow:**
+**Git Workflow with Project Context:**
 ```
-👤 "Review changes and commit my work"
-🤖 Uses: git_status, enhanced_git_diff, git_add, git_commit
-📝 Note: Please review all changes before committing
+👤 "Review changes in /Users/username/projects/my-app and commit my work"
+🤖 Uses: git_status, enhanced_git_diff, git_add, git_commit  
+📝 Note: Full paths ensure Git operations target the correct repository
+```
+
+**Working with Multiple Projects:**
+```
+👤 "Compare the package.json files between /Users/username/projects/app-v1 and /Users/username/projects/app-v2"
+🤖 Uses: read_file, compare_files with proper workspace context
+📝 Note: Full paths prevent confusion when working with multiple projects
+```
+
+**Docker Operations with Project Path:**
+```
+👤 "Build a Docker image for the project at /Users/username/projects/my-docker-app"
+🤖 Uses: docker_build, read_file (for Dockerfile) with correct working directory
+📝 Note: Ensures Docker commands run in the correct project context
 ```
 
 **Experimental Security Features:**
 ```
-👤 "Start a development session and run tests securely"
+👤 "Start a development session for /Users/username/projects/secure-app and run tests"
 🤖 Attempts: start_coding_session, secure_run_command, auto_commit_changes
-📝 Note: Security features are experimental - verify results manually
+📝 Note: Project-specific security settings work better with full paths
 ```
 
 ## 🧪 Development & Testing
