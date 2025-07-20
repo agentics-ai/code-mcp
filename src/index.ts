@@ -514,7 +514,108 @@ export class VSCodeAgentServer {
   }
 }
 
+// CLI functionality
+function showHelp(): void {
+  console.log(`
+Code MCP Server v${SERVER_CONFIG.version} (Experimental)
+
+An experimental Model Context Protocol (MCP) server that aims to enable AI 
+assistants like Claude to interact with VS Code workspaces. This project is 
+still in active development - please use with caution.
+
+Usage:
+  npx code-mcp                    Start the MCP server
+  npx code-mcp --help, -h        Show this help message
+  npx code-mcp --version, -v     Show version information
+  npx code-mcp --config          Generate Claude Desktop configuration
+
+Experimental Features:
+  • 🎯 Workspace Management (basic implementation)
+  • 🛡️ Project Configuration (.vscode-mcp.toml - still evolving)
+  • 📂 File Operations (core functionality working)
+  • ⚡ Code Execution (Python, JavaScript - experimental)
+  • 🔧 Git Integration (basic workflow support)
+  • 🐳 Docker Integration (limited container operations)
+  • 🏗️ Project Scaffolding (basic templates)
+  • 🔍 Code Analysis (experimental features)
+
+⚠️  Warning: This is experimental software. Test thoroughly in development 
+    environments before using with important projects.
+
+Configuration:
+  Place a .vscode-mcp.toml file in your project root for project-specific settings.
+  Run 'npx code-mcp --config' to generate Claude Desktop configuration.
+  (Configuration format may change as we refine the system)
+
+Documentation:
+  https://github.com/agentics-ai/code-mcp#readme
+
+Issues & Feedback:
+  https://github.com/agentics-ai/code-mcp/issues
+  (We especially welcome reports of what works and what doesn't!)
+`);
+}
+
+function showVersion(): void {
+  console.log(`Code MCP Server v${SERVER_CONFIG.version}`);
+}
+
+function generateClaudeConfig(): void {
+  const config = {
+    mcpServers: {
+      "code-mcp": {
+        command: "npx",
+        args: ["code-mcp"],
+        env: {
+          NODE_ENV: "production"
+        }
+      }
+    }
+  };
+
+  console.log(`
+Claude Desktop Configuration:
+
+Add this to your Claude Desktop configuration file:
+
+${JSON.stringify(config, null, 2)}
+
+Configuration file locations:
+• macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
+• Linux: ~/.config/Claude/claude_desktop_config.json  
+• Windows: %APPDATA%\\Claude\\claude_desktop_config.json
+
+After adding the configuration, restart Claude Desktop.
+`);
+}
+
+// Handle CLI arguments
+function handleCLI(): boolean {
+  const args = process.argv.slice(2);
+  
+  if (args.includes('--help') || args.includes('-h')) {
+    showHelp();
+    return true;
+  }
+  
+  if (args.includes('--version') || args.includes('-v')) {
+    showVersion();
+    return true;
+  }
+  
+  if (args.includes('--config')) {
+    generateClaudeConfig();
+    return true;
+  }
+  
+  return false;
+}
+
 // Start the server
+if (handleCLI()) {
+  process.exit(0);
+}
+
 const server = new VSCodeAgentServer();
 server.run().catch((error) => {
   console.error('Failed to start server:', error);

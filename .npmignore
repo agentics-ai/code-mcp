@@ -1,0 +1,48 @@
+# Development files
+*.log
+*.tgz
+.DS_Store
+.vscode/
+.idea/
+
+# Source files (we only publish dist/)
+src/
+tsconfig.json
+
+# Testing
+tests/
+test-workspace/
+jest.config.js
+coverage/
+
+# Build artifacts
+node_modules/
+.nyc_output/
+
+# Development dependencies
+.git/
+.gitignore
+.github/
+
+# Docker development
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Development scripts that aren't needed for end users
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Editor configs
+.editorconfig
+.eslintrc*
+.prettierrc*
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp

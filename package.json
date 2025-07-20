@@ -1,14 +1,27 @@
 {
   "name": "code-mcp",
   "version": "2.0.0",
-  "description": "Full-featured coding agent MCP server for VS Code with Python, JavaScript, and Git support",
+  "description": "Experimental Model Context Protocol (MCP) server for VS Code integration with development tools, secure command execution, and AI-powered coding assistance. Still in active development.",
   "main": "dist/src/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md",
+    "scripts/",
+    ".vscode-mcp-sample.toml"
+  ],
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
     "start": "pnpm run build && node dist/src/index.js",
     "dev": "tsc --watch",
+    "prepublishOnly": "pnpm run build && pnpm test",
+    "postinstall": "node -e \"console.log('\\n🚀 Code MCP Server installed!\\n\\n📖 Quick start: npx code-mcp --help\\n🔧 Setup guide: https://github.com/agentics-ai/code-mcp#readme\\n')\"",
     "test": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest",
     "test:watch": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS='--experimental-vm-modules' pnpm exec jest --coverage",
@@ -30,12 +43,19 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "vscode",
     "claude",
-    "agent",
+    "ai-agent",
+    "development-tools",
     "python",
     "javascript",
-    "git"
+    "git",
+    "docker",
+    "coding-assistant",
+    "ai-development",
+    "secure-execution",
+    "project-configuration"
   ],
   "repository": {
     "type": "git",
@@ -45,7 +65,11 @@
     "url": "https://github.com/agentics-ai/code-mcp/issues"
   },
   "homepage": "https://github.com/agentics-ai/code-mcp#readme",
-  "author": "",
+  "author": {
+    "name": "Agentics AI",
+    "email": "contact@agentics.ai",
+    "url": "https://github.com/agentics-ai"
+  },
   "license": "MIT",
   "dependencies": {
     "@iarna/toml": "^2.2.5",
